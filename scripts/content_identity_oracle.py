@@ -25,6 +25,10 @@ def trim(value: Any) -> str:
     return "" if value is None else str(value).strip()
 
 
+def _reject_constant(c: str) -> Any:
+    raise ValueError(f"non-standard JSON constant rejected: {c}")
+
+
 def _reject_duplicate_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in pairs:
@@ -36,7 +40,11 @@ def _reject_duplicate_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, An
 
 def parse_json_fail_closed(raw: str) -> Any:
     try:
-        return json.loads(raw, object_pairs_hook=_reject_duplicate_object_pairs)
+        return json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_object_pairs,
+            parse_constant=_reject_constant,
+        )
     except json.JSONDecodeError as exc:
         raise ValueError(f"invalid options_json: {exc.msg}") from exc
 
@@ -48,7 +56,12 @@ def canonical_json(raw: Any) -> str:
         value = raw
     if not isinstance(value, (dict, list)):
         raise ValueError("options_json must decode to object or array")
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    if isinstance(value, dict):
+        keys = list(value.keys())
+        trimmed = [trim(k) for k in keys]
+        if len(set(trimmed)) != len(keys):
+            raise ValueError(f"colliding option keys after trimming: {keys}")
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
 
 def option_labels(raw: Any) -> set[str]:
@@ -57,7 +70,11 @@ def option_labels(raw: Any) -> set[str]:
     else:
         value = raw
     if isinstance(value, dict):
-        return {trim(k) for k in value.keys()}
+        keys = list(value.keys())
+        trimmed = [trim(k) for k in keys]
+        if len(set(trimmed)) != len(keys):
+            raise ValueError(f"colliding option keys after trimming: {keys}")
+        return set(trimmed)
     if isinstance(value, list):
         return {str(i + 1) for i in range(len(value))}
     raise ValueError("options_json must decode to object or array")
