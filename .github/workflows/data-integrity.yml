@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'data_lake/**'
+      - 'scripts/repair_fts_sync.py'
       - '.github/workflows/data-integrity.yml'
   push:
     branches: [main]
     paths:
       - 'data_lake/**'
+      - 'scripts/repair_fts_sync.py'
       - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
 
@@ -237,3 +239,29 @@ jobs:
 
           print(json.dumps(report, indent=2, sort_keys=True))
           PY
+
+  prove-r119-repair-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Prove repair on isolated database copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp data_lake/sqlite/universal_study_lake.sqlite /tmp/universal_study_lake.sqlite
+          python scripts/repair_fts_sync.py /tmp/universal_study_lake.sqlite | tee /tmp/r119-repair-report.json
+          gzip -n -c /tmp/universal_study_lake.sqlite > /tmp/universal_study_lake.sqlite.gz
+          sha256sum /tmp/universal_study_lake.sqlite /tmp/universal_study_lake.sqlite.gz /tmp/r119-repair-report.json
+
+      - name: Upload short-lived repaired candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: r119-repaired-sqlite-${{ github.sha }}
+          path: |
+            /tmp/universal_study_lake.sqlite.gz
+            /tmp/r119-repair-report.json
+          if-no-files-found: error
+          retention-days: 1
