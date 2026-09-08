@@ -13,9 +13,16 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  hash-lock:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Definition-plane probe
-        run: echo "definition-plane reached"
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install hash-locked DuckDB
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input --only-binary=:all: --require-hashes -r ci/requirements-data-integrity.txt
+
+      - name: Import DuckDB
+        run: python -c "import duckdb; print(duckdb.__version__)"
