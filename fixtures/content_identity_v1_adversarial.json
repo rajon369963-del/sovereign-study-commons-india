@@ -1,0 +1,80 @@
+{
+  "contract_version": "content_identity_v1_proposed",
+  "repo_task_id": "SSC-R128-CONTENT-IDENTITY-TRISTATE-CANONICALIZATION-V1",
+  "status": "PROPOSED_NO_DB_MIGRATION",
+  "canonicalization": {
+    "text": "utf8_trim_edges_only",
+    "options_json": "parse_json_recursive_object_key_sort_preserve_array_order_compact_serialize",
+    "correct_opt": "trim_only_then_validate_against_canonical_options"
+  },
+  "fixtures": [
+    {
+      "id": "CI-V1-001",
+      "adversary": "options_json_key_order_and_whitespace",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{ \"B\": \"two\", \"A\": \"one\" }","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "expected": "SAME",
+      "rationale": "Serialization-only JSON differences must not create false DISTINCT units."
+    },
+    {
+      "id": "CI-V1-002",
+      "adversary": "contradictory_correct_answer",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"B","explanation":"Because two.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "rationale": "Same evidence/question/options cannot silently admit incompatible answer truth."
+    },
+    {
+      "id": "CI-V1-003",
+      "adversary": "compatible_explanation_paraphrase",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Option A is correct because the evidence supports one.","exact_quote":"Q?"},
+      "expected": "SAME",
+      "expected_version_delta": "EXPLANATION_VERSION",
+      "rationale": "Compatible explanation improvement is versioned content, not a second learner unit."
+    },
+    {
+      "id": "CI-V1-004",
+      "adversary": "contradictory_explanation",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Option B is the correct answer.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "rationale": "Explanation contradicts correctness-bearing evidence."
+    },
+    {
+      "id": "CI-V1-005",
+      "adversary": "genuine_evidence_span_change",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"02:10-02:20","question_text":"Q2?","options_json":"{\"A\":\"three\",\"B\":\"four\"}","correct_opt":"B","explanation":"Because four.","exact_quote":"Q2?"},
+      "expected": "DISTINCT",
+      "rationale": "Different evidence-bound source segment and question content proves a different unit."
+    },
+    {
+      "id": "CI-V1-006",
+      "adversary": "teacher_correction_with_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Control"},
+      "provenance_lineage": {"old_value":"Teacher A","new_value":"Teacher B","evidence":"source attribution correction","causal_event_id":"fixture-CI-V1-006"},
+      "expected": "SAME",
+      "rationale": "Attribution correction alone does not create a second learner unit when lineage is explicit."
+    },
+    {
+      "id": "CI-V1-007",
+      "adversary": "topic_taxonomy_correction_with_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Stability"},
+      "candidate_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Nyquist Stability"},
+      "provenance_lineage": {"old_value":"Stability","new_value":"Nyquist Stability","evidence":"taxonomy refinement","causal_event_id":"fixture-CI-V1-007"},
+      "expected": "SAME",
+      "rationale": "Taxonomy refinement is metadata-only when identity-bearing evidence is unchanged."
+    },
+    {
+      "id": "CI-V1-008",
+      "adversary": "attribution_change_without_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Control"},
+      "provenance_lineage": null,
+      "expected": "CONFLICT_OR_INVALID",
+      "rationale": "Provenance assertions must not be silently rewritten without evidence lineage."
+    }
+  ]
+}
