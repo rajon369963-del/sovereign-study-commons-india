@@ -1,5 +1,10 @@
 # CI-only dependency lock for .github/workflows/data-integrity.yml
-# DuckDB 1.5.5 CPython 3.13 manylinux x86_64 wheel published on PyPI.
-# Byte hash is intentionally fail-closed; update only after independent provenance review.
+# DuckDB 1.5.5 Linux x86_64 wheels (CPython 3.10-3.14) published on PyPI.
+# Multiple accepted hashes keep the hosted-runner Python minor flexible while
+# preserving byte-level fail-closed verification.
 duckdb==1.5.5 \
-    --hash=sha256:078e6a60dd8eedde5832f45422ca5c4a6b8c837aeabd8a56ca0b7d933f588053
+    --hash=sha256:e238060db5ca59879882a6e9b015e2c65d5c64ddf281ba1d7a9a2033764152cf \
+    --hash=sha256:b9b6f86ed85d4ef5e0211eaebf75d057bd8bb520bba438a95dd0f4e42234bbfe \
+    --hash=sha256:7a6d2d11859d82a936ebdcb30ce3d8a1cbb3e990bff05c12abb9b54c44fa7bd1 \
+    --hash=sha256:078e6a60dd8eedde5832f45422ca5c4a6b8c837aeabd8a56ca0b7d933f588053 \
+    --hash=sha256:fbf0f2d48b43c6c304d00463b463c27ead6c4b01c3c1816b750f728decf71afe
