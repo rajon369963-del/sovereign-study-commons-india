@@ -1,0 +1,55 @@
+{
+  "manifest_version": "1.0.0",
+  "generated_at": "2026-09-09T04:15:00Z",
+  "description": "Reproducible dataset manifest for committed Sovereign Study Commons India assets with physical hashes, claimed row counts, schema IDs, and explicit provenance/licensing boundaries.",
+  "assets": [
+    {
+      "path": "data_lake/sqlite/universal_study_lake.sqlite",
+      "format": "sqlite3",
+      "byte_size": 430080,
+      "sha256": "3f4f9af2d3d16a27e91055387e9fcb1c234eacaed1a4ad93524e143ac755142b",
+      "schema_version": "universal_study_lake_v1",
+      "claimed_row_count": 11,
+      "provenance_class": "SOCRATIC_MASTERY_CURATED_DEMO",
+      "license_status": "CC-BY-4.0/EDUCATIONAL_COMMONS",
+      "verification_status": "VERIFIED_LOCAL_CANARY",
+      "primary_table": "study_units"
+    },
+    {
+      "path": "data_lake/parquet/universal_study_lake.parquet",
+      "format": "parquet",
+      "byte_size": 20117,
+      "sha256": "0467aa8bff39637fb79d6870724b7227afb1cdebad37a4e568007bed9594b22d",
+      "schema_version": "universal_study_lake_parquet_v1",
+      "claimed_row_count": 11,
+      "provenance_class": "SOCRATIC_MASTERY_CURATED_DEMO",
+      "license_status": "CC-BY-4.0/EDUCATIONAL_COMMONS",
+      "verification_status": "VERIFIED_LOCAL_CANARY",
+      "primary_table": "study_units"
+    },
+    {
+      "path": "data_lake/parquet/gate_ee_5k_questions.parquet",
+      "format": "parquet",
+      "byte_size": 704093,
+      "sha256": "44b9b75b088cfbba5f8f650307c1f612d80eed1faaa48b07367a9059b9f2d9c4",
+      "schema_version": "gate_ee_pyq_parquet_v1",
+      "claimed_row_count": 5000,
+      "provenance_class": "COMMUNITY_EXAM_BANK_EXPORT",
+      "license_status": "UNKNOWN/REVIEW_REQUIRED",
+      "verification_status": "UNVERIFIED_COMMUNITY_ASSET",
+      "primary_table": "questions"
+    },
+    {
+      "path": "data_lake/parquet/upsc_polity_5k_videos.parquet",
+      "format": "parquet",
+      "byte_size": 336145,
+      "sha256": "c8ebbdee54aa3e29bf0c23249b3e2098168f9cc94ed75f2f26a592de9cdd9ca3",
+      "schema_version": "upsc_polity_video_index_v1",
+      "claimed_row_count": 5000,
+      "provenance_class": "COMMUNITY_VIDEO_METADATA_INDEX",
+      "license_status": "UNKNOWN/REVIEW_REQUIRED",
+      "verification_status": "UNVERIFIED_COMMUNITY_ASSET",
+      "primary_table": "videos"
+    }
+  ]
+}
