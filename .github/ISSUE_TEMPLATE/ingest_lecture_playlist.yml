@@ -1,19 +1,23 @@
-name: 📥 Ingest New Lecture Playlist / Video
-description: Submit a YouTube lecture playlist or channel for automated C17 cleaning & global deduplication.
-title: "[INGEST]: "
+name: 📥 Propose Lecture Playlist / Video for Review
+description: Submit a public educational YouTube playlist or video for maintainer review; submission does not trigger automatic ingestion.
+title: "[INGEST-REQUEST]: "
 labels: ["community-harvest", "zero-duplicate-check"]
 body:
   - type: markdown
     attributes:
       value: |
-        ### 🌐 Global Study Commons Ingestion Request
-        Thank you for contributing! Once submitted, our GitHub Action robot will automatically extract the flat playlist, perform a SHA-256 deduplication check, clean transcripts with native C17, and add them to the Hugging Face Parquet Lake.
+        ### 🌐 Study Commons ingestion candidate
+        Thank you for contributing. This form creates a review request only.
+
+        **Current truth:** submission does **not** automatically run C17 cleaning, deduplication, transcript extraction, or Hugging Face publishing. A maintainer must review source suitability, licensing/provenance, duplication risk, and the currently verified ingestion path before any data is added.
+
+        If automated ingestion is introduced later, it must first be present on the default branch, pass its acceptance/security/provenance checks, and be documented as verified before this form promises automation.
 
   - type: input
     id: playlist_url
     attributes:
       label: YouTube Playlist or Video URL
-      description: Enter the full YouTube playlist or video link.
+      description: Enter the public source URL to be reviewed.
       placeholder: https://www.youtube.com/playlist?list=PL...
     validations:
       required: true
@@ -22,7 +26,7 @@ body:
     id: exam_branch
     attributes:
       label: Target Exam & Branch
-      description: Select the branch this content belongs to.
+      description: Select the closest current Study Commons category.
       options:
         - "GATE_EE (Electrical Engineering)"
         - "UPSC_CSE (Civil Services / Polity / General Studies)"
@@ -36,8 +40,8 @@ body:
     id: teacher_attribution
     attributes:
       label: Primary Teacher / Channel Name
-      description: Name of the educator (e.g. Khan Sir, Dr. M. Laxmikanth, Dr. P.S. Bimbhra, NPTEL).
-      placeholder: e.g. Dr. P.S. Bimbhra
+      description: Name of the educator or channel so provenance can be reviewed.
+      placeholder: e.g. NPTEL
     validations:
       required: true
 
@@ -46,5 +50,5 @@ body:
     attributes:
       label: Confirmation
       options:
-        - label: I confirm this content is educational and public for students across India.
+        - label: I confirm this is a public educational source and understand this submission is a review request, not a promise of ingestion or republication.
           required: true
