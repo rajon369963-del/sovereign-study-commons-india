@@ -6,6 +6,8 @@ Thank you for helping build a free, evidence-backed study commons for Indian lea
 
 Choose a small open issue with clear acceptance criteria. Prefer fixes to documentation, provenance, validation, examples, or metadata before adding new systems.
 
+Use the [Contributor Ladder](CONTRIBUTOR_LADDER.md) to choose work that matches your current skill level—from zero-code truth/provenance fixes through reproducible DuckDB tests to advanced parser, CI, Pages, and publishing work.
+
 ## Evidence rules
 
 - Do not upload copyrighted material unless redistribution rights are clear.
