@@ -1,0 +1,28 @@
+{
+  "contract_version": "content_identity_v1_canonical_option_label_collision_fail_closed",
+  "repo_task_id": "SSC-R136-CANONICAL-OPTION-LABEL-COLLISION-FAIL-CLOSED-V1",
+  "status": "PROPOSED_NO_DB_MIGRATION",
+  "fixtures": [
+    {
+      "id": "CI-V1-017",
+      "adversary": "canonical_option_label_collision_leading_whitespace",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-label","timestamp_span":"00:10-00:20","question_text":"Label?","options_json":"{\"A\":\"one\",\"B\":\"three\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-label","timestamp_span":"00:10-00:20","question_text":"Label?","options_json":"{\"A\":\"one\",\" A \":\"two\",\"B\":\"three\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-018",
+      "adversary": "canonical_option_label_collision_trailing_whitespace",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-label2","timestamp_span":"00:30-00:40","question_text":"Label2?","options_json":"{\"A\":\"one\",\"B\":\"three\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label2?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-label2","timestamp_span":"00:30-00:40","question_text":"Label2?","options_json":"{\"A \":\"one\",\" A\":\"two\",\"B\":\"three\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label2?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-019",
+      "adversary": "non_colliding_trimmed_labels_remain_valid",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-label3","timestamp_span":"00:50-01:00","question_text":"Label3?","options_json":"{\" A \":\"one\",\" B \":\"two\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label3?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-label3","timestamp_span":"00:50-01:00","question_text":"Label3?","options_json":"{\" A \":\"one\",\" B \":\"two\"}","correct_opt":"A","explanation":"A.","exact_quote":"Label3?"},
+      "expected": "SAME"
+    }
+  ]
+}
