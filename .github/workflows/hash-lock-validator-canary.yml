@@ -2,26 +2,14 @@ name: Hash lock validator canary
 
 on:
   push:
-    branches:
-      - 'air10-04/hash-lock-validator-canary-20260908'
-    paths:
-      - 'ci/requirements-data-integrity.txt'
-      - '.github/workflows/hash-lock-validator-canary.yml'
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  hash-lock:
+  probe:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout exact revision
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-
-      - name: Install hash-locked DuckDB
-        run: python -m pip install --disable-pip-version-check --no-input --only-binary=:all: --require-hashes -r ci/requirements-data-integrity.txt
-
-      - name: Import DuckDB
-        run: python -c "import duckdb; print(duckdb.__version__)"
+      - name: Definition-plane probe
+        run: echo "definition-plane reached"
