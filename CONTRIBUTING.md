@@ -15,6 +15,7 @@ Use the [Contributor Ladder](CONTRIBUTOR_LADDER.md) to choose work that matches 
 - Record provenance: source URL, title, publisher/teacher, retrieval date, and license/usage status when known.
 - Do not include private learner data, harvested contacts, credentials, tokens, or secrets.
 - Do not claim a workflow, deployment, Hugging Face sync, Pages site, or dataset count is live unless it can be independently reproduced.
+- Provenance lineage does not authorize an arbitrary metadata rewrite. For correction workflows, define the exact allowed field set first; reject unknown, additional, or out-of-scope changed keys even when they carry plausible-looking lineage. If the metadata schema is JSON-shaped, prefer an explicit closed schema (for example declared `properties` plus `additionalProperties: false`, or the appropriate `unevaluatedProperties` rule when schemas are composed) and version the correction contract.
 
 ## Pull request checklist
 
@@ -22,6 +23,7 @@ Use the [Contributor Ladder](CONTRIBUTOR_LADDER.md) to choose work that matches 
 - Existing wheel/code was checked before introducing a new dependency.
 - Tests or a reproducible verification command are included when applicable.
 - Data/schema changes include provenance and license notes.
+- Metadata-correction code proves at least one allowed-field case and one unknown/additional-field fail-closed case before merge.
 - Documentation describes actual current state, not intended future state.
 - No secrets or private data are committed.
 
