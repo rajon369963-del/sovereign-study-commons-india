@@ -1,0 +1,37 @@
+name: SHA256 idempotency canary
+
+on:
+  pull_request:
+    paths:
+      - 'data_lake/sqlite/**'
+      - 'scripts/prove_sha256_idempotency.py'
+      - '.github/workflows/sha256-idempotency-canary.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data_lake/sqlite/**'
+      - 'scripts/prove_sha256_idempotency.py'
+      - '.github/workflows/sha256-idempotency-canary.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sha256-idempotency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prove-isolated-full-sha-write-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Prove UNIQUE(full sha256_hash) on isolated copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp data_lake/sqlite/universal_study_lake.sqlite /tmp/universal_study_lake.sqlite
+          python scripts/prove_sha256_idempotency.py /tmp/universal_study_lake.sqlite
