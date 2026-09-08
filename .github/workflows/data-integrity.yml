@@ -51,6 +51,12 @@ jobs:
 
           report = {'sqlite': [], 'parquet': []}
 
+          # Repository-specific intended membership contracts. These are explicit on
+          # purpose: a green build must not infer away an unexplained source/index gap.
+          expected_fts_sources = {
+              'universal_fts': 'study_units',
+          }
+
           def qident(name):
               return '"' + name.replace('"', '""') + '"'
 
@@ -87,7 +93,9 @@ jobs:
                   for fts in fts_tables:
                       create_sql = objects[fts]['sql']
                       match = re.search(r"\bcontent\s*=\s*['\"]([^'\"]+)['\"]", create_sql, re.I)
-                      source = match.group(1) if match else None
+                      source = expected_fts_sources.get(fts)
+                      if not source:
+                          source = match.group(1) if match else None
                       if not source and fts.endswith('_fts') and fts[:-4] in objects:
                           source = fts[:-4]
 
@@ -95,73 +103,79 @@ jobs:
                       shadow_docsize = f'{fts}_docsize'
                       contract = {'fts': fts, 'source': source}
 
-                      if source and source in objects and objects[source]['type'] == 'table':
-                          source_ids = {
-                              r[0] for r in con.execute(f'SELECT rowid FROM {qident(source)}')
+                      assert source, f'{path}:{fts}: no intended source-table contract'
+                      assert source in objects and objects[source]['type'] == 'table', (
+                          f'{path}:{fts}: intended source table {source!r} is missing'
+                      )
+
+                      source_ids = {
+                          r[0] for r in con.execute(f'SELECT rowid FROM {qident(source)}')
+                      }
+                      source_count = len(source_ids)
+                      assert source_count == row_counts[source], (
+                          f'{path}:{source}: duplicate/collision in rowid accounting'
+                      )
+                      contract['source_rows'] = source_count
+
+                      indexed_ids = None
+                      if shadow_content in objects:
+                          content_ids = [
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_content)}'
+                              )
+                          ]
+                          assert len(content_ids) == len(set(content_ids)), (
+                              f'{path}:{shadow_content}: duplicate FTS content ids'
+                          )
+                          indexed_ids = set(content_ids)
+                          contract['fts_content_rows'] = len(content_ids)
+                      elif shadow_docsize in objects:
+                          docsize_ids = [
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_docsize)}'
+                              )
+                          ]
+                          assert len(docsize_ids) == len(set(docsize_ids)), (
+                              f'{path}:{shadow_docsize}: duplicate FTS doc ids'
+                          )
+                          indexed_ids = set(docsize_ids)
+                          contract['fts_docsize_rows'] = len(docsize_ids)
+
+                      assert indexed_ids is not None, (
+                          f'{path}:{fts}: cannot prove indexed membership; '
+                          'no auditable FTS content/docsize id set found'
+                      )
+                      missing = sorted(source_ids - indexed_ids)
+                      extra = sorted(indexed_ids - source_ids)
+                      contract['missing_source_rowids'] = missing[:20]
+                      contract['extra_index_rowids'] = extra[:20]
+                      assert not missing and not extra, (
+                          f'{path}:{fts}: unexplained FTS membership drift versus {source}; '
+                          f'missing_source_rowids={missing[:20]}, extra_index_rowids={extra[:20]}'
+                      )
+
+                      if shadow_content in objects and shadow_docsize in objects:
+                          content_ids = {
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_content)}'
+                              )
                           }
-                          source_count = len(source_ids)
-                          assert source_count == row_counts[source], (
-                              f'{path}:{source}: duplicate/collision in rowid accounting'
-                          )
-                          contract['source_rows'] = source_count
-
-                          indexed_ids = None
-                          if shadow_content in objects:
-                              content_ids = [
-                                  r[0] for r in con.execute(
-                                      f'SELECT id FROM {qident(shadow_content)}'
-                                  )
-                              ]
-                              assert len(content_ids) == len(set(content_ids)), (
-                                  f'{path}:{shadow_content}: duplicate FTS content ids'
+                          docsize_ids = {
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_docsize)}'
                               )
-                              indexed_ids = set(content_ids)
-                              contract['fts_content_rows'] = len(content_ids)
-                          elif shadow_docsize in objects:
-                              docsize_ids = [
-                                  r[0] for r in con.execute(
-                                      f'SELECT id FROM {qident(shadow_docsize)}'
-                                  )
-                              ]
-                              assert len(docsize_ids) == len(set(docsize_ids)), (
-                                  f'{path}:{shadow_docsize}: duplicate FTS doc ids'
-                              )
-                              indexed_ids = set(docsize_ids)
-                              contract['fts_docsize_rows'] = len(docsize_ids)
-
-                          assert indexed_ids is not None, (
-                              f'{path}:{fts}: cannot prove indexed membership; '
-                              'no auditable FTS content/docsize id set found'
+                          }
+                          assert content_ids == docsize_ids, (
+                              f'{path}:{fts}: FTS shadow content/docsize membership differs'
                           )
-                          missing = sorted(source_ids - indexed_ids)
-                          extra = sorted(indexed_ids - source_ids)
-                          contract['missing_source_rowids'] = missing[:20]
-                          contract['extra_index_rowids'] = extra[:20]
-                          assert not missing and not extra, (
-                              f'{path}:{fts}: unexplained FTS membership drift versus {source}; '
-                              f'missing_source_rowids={missing[:20]}, extra_index_rowids={extra[:20]}'
-                          )
-
-                          if shadow_content in objects and shadow_docsize in objects:
-                              content_ids = {
-                                  r[0] for r in con.execute(
-                                      f'SELECT id FROM {qident(shadow_content)}'
-                                  )
-                              }
-                              docsize_ids = {
-                                  r[0] for r in con.execute(
-                                      f'SELECT id FROM {qident(shadow_docsize)}'
-                                  )
-                              }
-                              assert content_ids == docsize_ids, (
-                                  f'{path}:{fts}: FTS shadow content/docsize membership differs'
-                              )
-                      else:
-                          contract['membership_status'] = 'UNBOUND_SOURCE_TABLE'
 
                       fts_contracts.append(contract)
 
                   assert fts_tables, f'{path}: no FTS5 virtual table found; expected search index missing'
+                  unknown_contracts = sorted(set(expected_fts_sources) - set(fts_tables))
+                  assert not unknown_contracts, (
+                      f'{path}: expected FTS tables missing: {unknown_contracts}'
+                  )
 
               report['sqlite'].append({
                   'path': str(path),
