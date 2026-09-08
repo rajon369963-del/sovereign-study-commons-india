@@ -106,7 +106,7 @@ jobs:
         if: env.HF_TOKEN != ''
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_REPO: ${{ secrets.HF_DATASET_REPO || 'rajon-das/sovereign-study-lake-india' }}
+          HF_REPO: ${{ secrets.HF_DATASET_REPO || 'rajon369963-del/sovereign-study-lake-india' }}
         run: |
           echo "⚡ Syncing Parquet lake to Hugging Face Dataset: $HF_REPO..."
           pip install -q huggingface_hub
@@ -156,7 +156,7 @@ jobs:
             **Query your addition in DuckDB**:
             \`\`\`sql
             SELECT unit_id, exam_branch, topic, teacher, timestamp_span
-            FROM 'https://huggingface.co/datasets/rajon-das/sovereign-study-lake-india/resolve/main/data/universal_study_lake.parquet'
+            FROM 'https://huggingface.co/datasets/rajon369963-del/sovereign-study-lake-india/resolve/main/data/universal_study_lake.parquet'
             WHERE unit_id = '${unitId}';
             \`\`\`
             

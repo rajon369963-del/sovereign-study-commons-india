@@ -1,6 +1,6 @@
 # ⚡ Sovereign Study Commons India (सार्वजनिक अध्ययन महा-ज्ञानकोश)
 
-[![Hugging Face Datasets](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset%20Hub-yellow.svg)](https://huggingface.co/datasets/rajon-das/sovereign-study-lake-india)
+[![Hugging Face Datasets](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset%20Hub-yellow.svg)](https://huggingface.co/datasets/rajon369963-del/sovereign-study-lake-india)
 [![DuckDB Queryable](https://img.shields.io/badge/DuckDB-Parquet%20HTTP%20Range%20Ready-blue.svg)](https://duckdb.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Branch Coverage](https://img.shields.io/badge/Coverage-GATE%20EE%20%7C%20UPSC%20%7C%20NEET%20%7C%20AE%2FJE-purple.svg)](#)
