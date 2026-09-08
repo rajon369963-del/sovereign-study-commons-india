@@ -1,0 +1,4 @@
+*.wal
+*.shm
+.DS_Store
+harvest_result.json

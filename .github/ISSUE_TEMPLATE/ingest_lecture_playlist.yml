@@ -1,0 +1,50 @@
+name: 📥 Ingest New Lecture Playlist / Video
+description: Submit a YouTube lecture playlist or channel for automated C17 cleaning & global deduplication.
+title: "[INGEST]: "
+labels: ["community-harvest", "zero-duplicate-check"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 🌐 Global Study Commons Ingestion Request
+        Thank you for contributing! Once submitted, our GitHub Action robot will automatically extract the flat playlist, perform a SHA-256 deduplication check, clean transcripts with native C17, and add them to the Hugging Face Parquet Lake.
+
+  - type: input
+    id: playlist_url
+    attributes:
+      label: YouTube Playlist or Video URL
+      description: Enter the full YouTube playlist or video link.
+      placeholder: https://www.youtube.com/playlist?list=PL...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: exam_branch
+    attributes:
+      label: Target Exam & Branch
+      description: Select the branch this content belongs to.
+      options:
+        - "GATE_EE (Electrical Engineering)"
+        - "UPSC_CSE (Civil Services / Polity / General Studies)"
+        - "NEET_UG (Medical Entrance / Biology)"
+        - "STATE_AE_JE (Assistant / Junior Engineer / PSUs)"
+        - "GENERAL_STEM (Other STEM / Physics / Math)"
+    validations:
+      required: true
+
+  - type: input
+    id: teacher_attribution
+    attributes:
+      label: Primary Teacher / Channel Name
+      description: Name of the educator (e.g. Khan Sir, Dr. M. Laxmikanth, Dr. P.S. Bimbhra, NPTEL).
+      placeholder: e.g. Dr. P.S. Bimbhra
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmation
+      options:
+        - label: I confirm this content is educational and public for students across India.
+          required: true
