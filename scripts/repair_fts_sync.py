@@ -6,7 +6,7 @@ This script is intentionally narrow:
 - repairs missing source rows without inventing exclusions,
 - installs INSERT/UPDATE/DELETE synchronization triggers compatible with the
   current standalone/contentful FTS5 schema,
-- proves the repaired GATE-EE-COM-004 row is semantically searchable, and
+- proves the repaired GATEEE-COM-004 row is semantically searchable, and
 - runs a transactional insert/update/delete canary to prove future sync.
 
 It does not migrate the FTS schema and does not claim learner efficacy.
@@ -21,7 +21,7 @@ from pathlib import Path
 
 SOURCE = "study_units"
 FTS = "universal_fts"
-TARGET_UNIT_ID = "GATE-EE-COM-004"
+TARGET_UNIT_ID = "GATEEE-COM-004"
 SEMANTIC_TERM = "Nyquist"
 CANARY_UNIT_ID = "__FTS_SYNC_CANARY__"
 CANARY_HASH = "f" * 64
