@@ -11,6 +11,7 @@ This project should be easy to improve without requiring contributors to underst
 - Do not describe staged workflows, Hugging Face sync, Pages, dataset counts, or automation as live unless a newcomer can independently reproduce the claim.
 - Check existing tools, libraries, actions, and repository code before introducing a new dependency.
 - Treat a stored SHA-256 as evidence about exact bytes only. Do not infer semantic content identity or add a uniqueness constraint until the canonical payload fields/bytes, canonicalization rules, hash algorithm/version, and independent recomputation procedure are explicitly defined.
+- For identity-bearing structured fields, canonicalize by semantic type before hashing or deduplication. A JSON object needs a deterministic semantic representation (for example RFC 8785/JCS when the domain fits); a timestamp/range needs explicitly parsed start/end values plus unit/timebase. Do not treat arbitrary display serialization, key order, whitespace, or formatting as semantic identity unless the contract explicitly declares representation-sensitive identity.
 
 ## Rung 0 — zero-code truth and documentation fixes
 
@@ -74,8 +75,9 @@ Good contributions:
 - Improve deduplication or schema validation with regression tests.
 - Add a deterministic conversion step that preserves provenance and license metadata.
 - Define a canonical content-identity contract before deduplication or schema-level uniqueness: payload fields/bytes, canonicalization, hash algorithm/version, and an independent recomputation test must be explicit first.
+- Add paired adversarial SAME/DISTINCT fixtures for every structured identity-bearing field. Equivalent JSON key order/whitespace or equivalent range formatting should remain SAME when semantics are unchanged; changed option content or changed parsed range endpoints should be DISTINCT.
 
-**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes. Do not promote a uniqueness migration merely because the current snapshot happens to contain no duplicate hashes.
+**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes. Do not promote a uniqueness migration merely because the current snapshot happens to contain no duplicate hashes. For structured fields, the acceptance court must prove semantic invariance across alternate serializations and semantic separation across genuinely different values, unless the versioned identity contract explicitly chooses representation-sensitive identity.
 
 ## Rung 5 — CI, workflows, Pages, and external sync
 
