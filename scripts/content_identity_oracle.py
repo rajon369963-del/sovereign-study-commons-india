@@ -18,6 +18,7 @@ HUMAN = "HUMAN_ADJUDICATION_REQUIRED"
 IDENTITY_TEXT = ("exam_branch", "video_id", "question_text", "exact_quote")
 REQUIRED_RECORD = (*IDENTITY_TEXT, "timestamp_span", "options_json", "correct_opt", "explanation")
 LINEAGE_REQUIRED = ("old_value", "new_value", "evidence", "causal_event_id")
+ALLOWED_METADATA_CORRECTION_KEYS = frozenset({"teacher", "subject", "topic"})
 
 
 def trim(value: Any) -> str:
@@ -127,6 +128,8 @@ def metadata_decision(fixture: dict[str, Any]) -> dict[str, Any]:
     if len(changed) != 1:
         return {"decision": CONFLICT, "reason": "multiple metadata fields changed in one correction"}
     field = changed[0]
+    if field not in ALLOWED_METADATA_CORRECTION_KEYS:
+        return {"decision": CONFLICT, "reason": f"metadata field '{field}' not authorized for automatic correction", "adjudication": HUMAN}
     if valid_lineage(fixture.get("provenance_lineage"), base.get(field), cand.get(field)):
         return {"decision": SAME, "reason": f"lineage-bound metadata correction:{field}"}
     return {"decision": CONFLICT, "reason": f"metadata correction lacks matching lineage:{field}", "adjudication": HUMAN}
