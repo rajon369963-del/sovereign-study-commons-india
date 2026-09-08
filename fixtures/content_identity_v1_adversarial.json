@@ -147,6 +147,106 @@
       "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Modern Control"},
       "provenance_lineage": {"old_value":"Teacher A","new_value":"Teacher B","evidence":"channel update","causal_event_id":"fixture-CI-V1-020"},
       "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-021",
+      "adversary": "non_standard_json_nan_constant",
+      "base": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": NaN, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "candidate": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": 0, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-022",
+      "adversary": "non_standard_json_infinity_constant",
+      "base": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": Infinity, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "candidate": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": 100, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-023",
+      "adversary": "non_standard_json_negative_infinity_constant",
+      "base": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": -Infinity, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "candidate": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": -100, \"B\": 1}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-024",
+      "adversary": "colliding_option_keys_after_trimming",
+      "base": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": \"one\", \" A \": \"two\", \"B\": \"three\"}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "candidate": {
+        "exam_branch": "GATE_EE",
+        "video_id": "V123",
+        "timestamp_span": "01:00-02:00",
+        "exact_quote": "Voltage drop across the line.",
+        "question_text": "Find the voltage drop.",
+        "options_json": "{\"A\": \"one\", \"B\": \"three\"}",
+        "correct_opt": "B",
+        "explanation": "Calculation based on Ohm's law."
+      },
+      "expected": "CONFLICT_OR_INVALID"
     }
   ]
 }
