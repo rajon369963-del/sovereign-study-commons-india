@@ -2,6 +2,12 @@ name: Hash lock validator canary
 
 on:
   push:
+    branches:
+      - 'air10-04/hash-lock-validator-canary-20260908'
+    paths:
+      - 'ci/requirements-data-integrity.txt'
+      - '.github/workflows/hash-lock-validator-canary.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
