@@ -9,6 +9,7 @@ This script is intentionally narrow:
 - proves the repaired GATEEE-COM-004 row is semantically searchable, and
 - runs a transactional insert/update/delete canary to prove future sync.
 
+A committed repair still requires a separate read-only CI court before merge.
 It does not migrate the FTS schema and does not claim learner efficacy.
 """
 
