@@ -113,6 +113,40 @@
       "candidate": {"exam_branch":"GATE-EE","video_id":"vid-5","timestamp_span":"00:30-00:40","question_text":"Moved?","options_json":"{\"A\":\"yes\",\"B\":\"no\"}","correct_opt":"A","explanation":"Yes.","exact_quote":"Moved?"},
       "expected": "CONFLICT_OR_INVALID",
       "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-017",
+      "adversary": "subject_change_with_matching_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher A","subject":"Electrical Engineering","topic":"Control"},
+      "provenance_lineage": {"old_value":"EE","new_value":"Electrical Engineering","evidence":"subject taxonomy standardization","causal_event_id":"fixture-CI-V1-017"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-018",
+      "adversary": "unauthorized_metadata_key_with_matching_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control","source_license":"CC-BY-4.0"},
+      "candidate_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control","source_license":"CC-BY-SA-4.0"},
+      "provenance_lineage": {"old_value":"CC-BY-4.0","new_value":"CC-BY-SA-4.0","evidence":"license clarification","causal_event_id":"fixture-CI-V1-018"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-019",
+      "adversary": "added_unauthorized_key_with_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control","provenance_status":"VERIFIED"},
+      "provenance_lineage": {"old_value":"","new_value":"VERIFIED","evidence":"provenance verification","causal_event_id":"fixture-CI-V1-019"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-020",
+      "adversary": "multiple_metadata_fields_changed",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Modern Control"},
+      "provenance_lineage": {"old_value":"Teacher A","new_value":"Teacher B","evidence":"channel update","causal_event_id":"fixture-CI-V1-020"},
+      "expected": "CONFLICT_OR_INVALID"
     }
   ]
 }
