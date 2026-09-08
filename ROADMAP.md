@@ -10,10 +10,12 @@ This roadmap is deliberately truth-ranked: shipped evidence is separated from pl
 - Root `index.html`, `cockpit/index.html`, Parquet assets, SQLite asset, C17 binary, scripts, dataset card, MIT license, issue templates, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTOR_LADDER.md`, and `CHANGELOG.md` are present.
 - Four bounded beginner-friendly contribution issues remain open for README truth, dataset provenance manifest, DuckDB smoke verification, and discoverability/topics.
 - Issue #6 identified a contributor-trust bug in the lecture-playlist Issue Form. Current `main` now truthfully labels submissions as review requests and explicitly says they do not trigger automatic C17 cleaning, deduplication, transcript extraction, or Hugging Face publishing.
-- Pull request #7 is open and unmerged. It adds one declarative evidence-first PR template only; it does not add a bot, workflow, dependency, token permission, or enforcement mechanism.
-- Pull request #5 is open and unmerged. Its branch-only read-only data-integrity workflow has a successful PR Actions run, but independent review found that the green run does not yet prove full SQLite FTS/index integrity because `study_units=11` while several FTS tables report 10, and duplicate/collision plus dependency-hash checks are still missing.
+- Pull request #7 is open and unmerged. It adds one declarative evidence-first PR template only; the current branch wording says contributors should provide only evidence that applies to their change and may mark/remove non-applicable checks. This closes the specific docs-only checklist ambiguity, but the template is still branch-only governance until reviewed and merged.
+- Pull request #5 is open and unmerged. Its branch-only read-only data-integrity workflow previously produced a green canary, but the current head adds fail-closed FTS membership and duplicate-ID assertions and its latest run (`34230381135`) is **RED** at `Verify SQLite and Parquet integrity`. That red run is useful evidence that the gate is detecting a real source/index contract mismatch; it is not merge readiness and must not be weakened to recover green.
+- Current bus/root-cause evidence binds the missing FTS member to one later source insert (`GATE-EE-COM-004` / rowid 11) that was not synchronized into the standalone/contentful FTS representation. This cause still needs independent repo-side reproduction before repair is promoted.
 - Therefore `.github/workflows/` is still absent from `main`; PR #5 remains a **branch CI canary**, not live `main` automation.
-- GitHub→Hugging Face synchronization remains unverified until a real `main` workflow run succeeds and intended downstream artifacts are independently read back.
+- Pull request #8 is open and unmerged and is limited to UI truth-boundary wording; it is not provenance, efficacy, deployment, or learner-value evidence.
+- GitHub→Hugging Face synchronization remains unverified until a real reviewed `main` workflow run succeeds and intended downstream artifacts are independently read back.
 
 ## P0 — Truth and safety
 
@@ -21,8 +23,9 @@ This roadmap is deliberately truth-ranked: shipped evidence is separated from pl
 2. Verify GitHub Pages rendered content independently before calling the cockpit publicly deployed.
 3. Document provenance/license status for every externally sourced or derived data asset.
 4. Keep Issue #6 open until any staged parser/ingestion path also fails closed on malformed inputs, missing provenance, and C17 failures; the public Issue Form wording repair alone does not activate ingestion.
-5. Repair/court PR #5 FTS-membership semantics, duplicate/collision assertions, and dependency reproducibility before any merge decision; after merge, require a successful `main` run before calling CI live.
-6. Court PR #7 for contributor burden, privacy/licensing wording, and clarity; treat its checklist as declarative governance only unless a separate verified enforcement mechanism is ever introduced.
+5. Preserve PR #5's fail-closed RED state until the exact source-vs-index mismatch is independently reproduced and repaired; also add dependency-hash reproducibility. Then require a successful branch rerun, reviewed merge, and a successful `main` run before calling CI live.
+6. Keep PR #7's evidence-proportionality clarification intact; independently court privacy/licensing wording and maintainer burden before any merge decision. Treat its checklist as declarative governance only unless a separate verified enforcement mechanism is introduced.
+7. Treat PR #8 only as a truth-boundary repair unless independent deployment/provenance/efficacy evidence is produced.
 
 ## P1 — Contributor funnel
 
@@ -47,7 +50,7 @@ This roadmap is deliberately truth-ranked: shipped evidence is separated from pl
 
 ## Success measures
 
-- README and contributor forms contain zero deployment/automation claims that exceed independently verified state.
+- README, roadmap, and contributor forms contain zero deployment/automation claims that exceed independently verified state.
 - 3+ contributor-ready issues exist with measurable outcomes.
 - New data contributions carry provenance and license evidence.
 - Any automation claim links to a successful relevant workflow run and verifiable output.
