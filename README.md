@@ -2,14 +2,15 @@
 
 > भारत के छात्रों के लिए एक public, open study-data commons. Repository truth is preferred over intended future state.
 
-## Live truth status — verified 8 Sep 2026
+## Live truth status — verified 9 Sep 2026
 
 - **GitHub repository:** public and readable.
 - **Dataset artifacts:** repository contains study-data artifacts; counts and branch coverage should be independently recomputed from the files before being quoted externally.
 - **Community submissions:** an issue-template path exists for proposing sources. Submission does **not** mean automatic ingestion; maintainers must review legality, provenance, duplication, schema fit and quality.
-- **Automation:** `workflows_template/auto_harvest_and_hf_sync.yml` is a **staged template**, not an active GitHub Actions workflow. There is currently no `.github/workflows/` directory on the default branch.
+- **Integrity automation:** `.github/workflows/data-integrity.yml` and `.github/workflows/sha256-idempotency-canary.yml` are active on the default branch. Their first post-merge `main` runs completed successfully. These read-only/integrity checks do **not** automatically ingest community submissions, sync Hugging Face, or prove learner-facing deployment.
+- **Harvest/Hugging Face automation:** `workflows_template/auto_harvest_and_hf_sync.yml` remains a **staged template**, not an active GitHub Actions workflow.
 - **Hugging Face:** the staged template contains optional HF sync logic, but this README does **not** claim that a live dataset sync has been independently verified.
-- **Deployment:** repository artifacts are not, by themselves, proof that GitHub Pages or any other browser deployment works end-to-end.
+- **Deployment:** repository artifacts and successful CI are not, by themselves, proof that GitHub Pages or any other browser deployment works end-to-end.
 
 ## Quick local query
 
@@ -35,7 +36,7 @@ For playlist/study-source proposals, use the repository issue template. Maintain
 
 ## Automation safety gate
 
-The staged harvest/Hugging Face workflow must **not** be copied into `.github/workflows/` until all of these are verified: YAML syntax, event filtering, least-privilege permissions, untrusted issue-body handling, dependency/version pinning, token/secret gating, dry-run behavior, rollback, and a bounded canary. In particular, a staged workflow is not a live workflow.
+The staged harvest/Hugging Face workflow must **not** be copied into `.github/workflows/` until all of these are verified: YAML syntax, event filtering, least-privilege permissions, untrusted issue-body handling, dependency/version pinning, token/secret gating, dry-run behavior, rollback, and a bounded canary. In particular, the active integrity workflows are not evidence that the staged harvest/Hugging Face workflow is safe or live.
 
 ## Data-quality principles
 
