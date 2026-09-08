@@ -12,7 +12,7 @@
 **After:**
 
 ## Verification evidence
-<!-- Show your work. Use the smallest applicable set and remove irrelevant items. -->
+<!-- Show your work. Use only the evidence that applies to this change. Mark non-applicable checks N/A or remove them; docs-only changes do not need data/UI/adversarial evidence unless relevant. -->
 - [ ] Reproduction steps or input fixture included
 - [ ] Expected behavior stated
 - [ ] Observed behavior stated
