@@ -1,0 +1,118 @@
+{
+  "contract_version": "content_identity_v1_fail_closed_oracle",
+  "repo_task_id": "SSC-R132-SEMANTIC-DECISION-ORACLE-FAIL-CLOSED-V1",
+  "status": "PROPOSED_NO_DB_MIGRATION",
+  "canonicalization": {
+    "text": "utf8_trim_edges_only",
+    "options_json": "parse_json_recursive_object_key_sort_preserve_array_order_compact_serialize",
+    "correct_opt": "trim_only_then_validate_against_canonical_option_labels",
+    "timestamp_span": "parse_MMSS_or_HHMMSS_range_to_integer_seconds"
+  },
+  "fixtures": [
+    {
+      "id": "CI-V1-001",
+      "adversary": "options_json_key_order_and_whitespace",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10 - 00:20","question_text":"Q?","options_json":"{ \"B\": \"two\", \"A\": \"one\" }","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-002",
+      "adversary": "contradictory_correct_answer",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"B","explanation":"Because two.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-003",
+      "adversary": "explanation_changed_compatibility_ambiguous",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Option A is correct because the evidence supports one.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-004",
+      "adversary": "contradictory_explanation_not_auto_interpreted",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Option B is the correct answer.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-005",
+      "adversary": "genuine_source_and_payload_change",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"02:10-02:20","question_text":"Q2?","options_json":"{\"A\":\"three\",\"B\":\"four\"}","correct_opt":"B","explanation":"Because four.","exact_quote":"Q2?"},
+      "expected": "DISTINCT"
+    },
+    {
+      "id": "CI-V1-006",
+      "adversary": "teacher_correction_with_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Control"},
+      "provenance_lineage": {"old_value":"Teacher A","new_value":"Teacher B","evidence":"source attribution correction","causal_event_id":"fixture-CI-V1-006"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-007",
+      "adversary": "topic_taxonomy_correction_with_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Stability"},
+      "candidate_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Nyquist Stability"},
+      "provenance_lineage": {"old_value":"Stability","new_value":"Nyquist Stability","evidence":"taxonomy refinement","causal_event_id":"fixture-CI-V1-007"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-008",
+      "adversary": "attribution_change_without_lineage",
+      "base_metadata": {"teacher":"Teacher A","subject":"EE","topic":"Control"},
+      "candidate_metadata": {"teacher":"Teacher B","subject":"EE","topic":"Control"},
+      "provenance_lineage": null,
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-009",
+      "adversary": "malformed_options_json",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{bad json","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-010",
+      "adversary": "nested_json_object_key_order",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-2","timestamp_span":"01:00-01:20","question_text":"Nested?","options_json":"{\"A\":{\"value\":1,\"unit\":\"pu\"},\"B\":{\"unit\":\"pu\",\"value\":2}}","correct_opt":"A","explanation":"A.","exact_quote":"Nested?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-2","timestamp_span":"01:00-01:20","question_text":"Nested?","options_json":"{\"B\":{\"value\":2,\"unit\":\"pu\"},\"A\":{\"unit\":\"pu\",\"value\":1}}","correct_opt":"A","explanation":"A.","exact_quote":"Nested?"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-011",
+      "adversary": "array_order_change_is_semantic_and_ambiguous",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-3","timestamp_span":"03:00-03:20","question_text":"Array?","options_json":"[\"one\",\"two\"]","correct_opt":"1","explanation":"First.","exact_quote":"Array?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-3","timestamp_span":"03:00-03:20","question_text":"Array?","options_json":"[\"two\",\"one\"]","correct_opt":"1","explanation":"First.","exact_quote":"Array?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    },
+    {
+      "id": "CI-V1-012",
+      "adversary": "correct_opt_not_in_options",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"A","explanation":"Because one.","exact_quote":"Q?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-1","timestamp_span":"00:10-00:20","question_text":"Q?","options_json":"{\"A\":\"one\",\"B\":\"two\"}","correct_opt":"C","explanation":"Because C.","exact_quote":"Q?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-013",
+      "adversary": "cosmetic_timestamp_format",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-4","timestamp_span":"00:10-00:20","question_text":"Span?","options_json":"{\"A\":\"yes\",\"B\":\"no\"}","correct_opt":"A","explanation":"Yes.","exact_quote":"Span?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-4","timestamp_span":"00:00:10 to 00:00:20","question_text":"Span?","options_json":"{\"A\":\"yes\",\"B\":\"no\"}","correct_opt":"A","explanation":"Yes.","exact_quote":"Span?"},
+      "expected": "SAME"
+    },
+    {
+      "id": "CI-V1-014",
+      "adversary": "span_only_change_is_not_auto_distinct",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-5","timestamp_span":"00:10-00:20","question_text":"Moved?","options_json":"{\"A\":\"yes\",\"B\":\"no\"}","correct_opt":"A","explanation":"Yes.","exact_quote":"Moved?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-5","timestamp_span":"00:30-00:40","question_text":"Moved?","options_json":"{\"A\":\"yes\",\"B\":\"no\"}","correct_opt":"A","explanation":"Yes.","exact_quote":"Moved?"},
+      "expected": "CONFLICT_OR_INVALID",
+      "expected_adjudication": "HUMAN_ADJUDICATION_REQUIRED"
+    }
+  ]
+}
