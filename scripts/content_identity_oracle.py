@@ -57,7 +57,18 @@ def option_labels(raw: Any) -> set[str]:
     else:
         value = raw
     if isinstance(value, dict):
-        return {trim(k) for k in value.keys()}
+        canonical_to_raw: dict[str, str] = {}
+        for raw_key in value.keys():
+            label = trim(raw_key)
+            if not label:
+                raise ValueError("canonical option label must be non-empty")
+            prior = canonical_to_raw.get(label)
+            if prior is not None and prior != raw_key:
+                raise ValueError(
+                    f"canonical option-label collision after trim normalization: {prior!r} vs {raw_key!r} -> {label!r}"
+                )
+            canonical_to_raw[label] = raw_key
+        return set(canonical_to_raw)
     if isinstance(value, list):
         return {str(i + 1) for i in range(len(value))}
     raise ValueError("options_json must decode to object or array")
