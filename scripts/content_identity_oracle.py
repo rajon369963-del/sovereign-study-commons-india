@@ -34,9 +34,17 @@ def _reject_duplicate_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, An
     return out
 
 
+def _reject_nonstandard_constant(token: str) -> Any:
+    raise ValueError(f"non-standard JSON constant: {token}")
+
+
 def parse_json_fail_closed(raw: str) -> Any:
     try:
-        return json.loads(raw, object_pairs_hook=_reject_duplicate_object_pairs)
+        return json.loads(
+            raw,
+            object_pairs_hook=_reject_duplicate_object_pairs,
+            parse_constant=_reject_nonstandard_constant,
+        )
     except json.JSONDecodeError as exc:
         raise ValueError(f"invalid options_json: {exc.msg}") from exc
 
