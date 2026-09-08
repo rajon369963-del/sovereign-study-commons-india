@@ -1,0 +1,81 @@
+name: Data integrity
+
+on:
+  pull_request:
+    paths:
+      - 'data_lake/**'
+      - '.github/workflows/data-integrity.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data_lake/**'
+      - '.github/workflows/data-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-data-lake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install pinned DuckDB
+        run: python -m pip install --disable-pip-version-check --no-input duckdb==1.5.5
+
+      - name: Verify SQLite and Parquet integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import sqlite3
+          from pathlib import Path
+
+          import duckdb
+
+          root = Path('data_lake')
+          sqlite_files = sorted((root / 'sqlite').glob('*.sqlite'))
+          parquet_files = sorted((root / 'parquet').glob('*.parquet'))
+          assert sqlite_files, 'no SQLite files found'
+          assert parquet_files, 'no Parquet files found'
+
+          report = {'sqlite': [], 'parquet': []}
+
+          for path in sqlite_files:
+              with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as con:
+                  integrity = con.execute('PRAGMA integrity_check').fetchone()[0]
+                  assert integrity == 'ok', f'{path}: integrity_check={integrity!r}'
+                  tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+                  assert tables, f'{path}: no user tables'
+                  row_counts = {t: con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0] for t in tables}
+              report['sqlite'].append({
+                  'path': str(path),
+                  'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'tables': row_counts,
+              })
+
+          con = duckdb.connect(database=':memory:')
+          for path in parquet_files:
+              quoted = str(path).replace("'", "''")
+              row_count = con.execute(f"SELECT COUNT(*) FROM read_parquet('{quoted}')").fetchone()[0]
+              assert row_count > 0, f'{path}: zero rows'
+              schema = con.execute(f"DESCRIBE SELECT * FROM read_parquet('{quoted}')").fetchall()
+              assert schema, f'{path}: empty schema'
+              report['parquet'].append({
+                  'path': str(path),
+                  'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'rows': row_count,
+                  'columns': [r[0] for r in schema],
+              })
+
+          print(json.dumps(report, indent=2, sort_keys=True))
+          PY
