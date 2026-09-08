@@ -29,9 +29,14 @@
           </p>
         </div>
       </div>
-      <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-        11 Socratic Mastery Units (Parquet Verified) • 5k GATE PYQs • 5k UPSC Videos
+      <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-200 border border-amber-500/40">
+        DEMO • 11 embedded units • dataset provenance / learner efficacy unverified
       </span>
+    </div>
+
+    <!-- Truth boundary -->
+    <div class="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 text-[11px] sm:text-xs text-amber-100 leading-relaxed">
+      <strong>सत्य सीमा:</strong> यह public cockpit अभी एक demo surface है। नीचे दिखने वाला quiz content embedded demo data है; teacher/source provenance, real learner outcomes, automatic ingestion, और GitHub↔Hugging Face↔Drive parity को यहाँ verified नहीं माना जाता।
     </div>
 
     <!-- Exam / Branch Selector Tabs -->
@@ -77,15 +82,15 @@
     <div class="border-t border-slate-800/80 pt-4 space-y-3">
       <div class="flex items-center justify-between text-xs">
         <span class="font-bold text-slate-300 flex items-center gap-1.5">
-          <span>🤝</span> कम्युनिटी ज्ञान-दान (Ingest Playlist / Video)
+          <span>🤝</span> कम्युनिटी स्रोत प्रस्ताव (Playlist / Video review)
         </span>
-        <span class="text-[11px] text-emerald-400">ज़ीरो-डुप्लीकेट एनफोर्सर एक्टिव</span>
+        <span class="text-[11px] text-amber-300">Review-only intake • auto-ingestion verified नहीं</span>
       </div>
       <div class="flex gap-2">
         <input type="text" id="contribUrl" placeholder="यूट्यूब प्लेलिस्ट या वीडियो लिंक पेस्ट करें (e.g. https://youtube.com/playlist?list=...)" 
                class="flex-1 bg-slate-800/60 border border-slate-700/60 rounded-xl py-2 px-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
-        <button onclick="contributePlaylist()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer">
-          जाँचें और जोड़ें
+        <button onclick="contributePlaylist()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-300 border border-amber-500/30 transition-all cursor-pointer">
+          Review request खोलें
         </button>
       </div>
       <div id="contribStatus" class="hidden text-xs p-3 rounded-xl"></div>
@@ -262,17 +267,17 @@
               <span class="text-slate-400 font-medium">${unit.subject} • </span>
               <strong class="text-slate-200">${unit.topic}</strong>
             </div>
-            <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-semibold">${unit.teacher}</span>
+            <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-200 font-semibold">Demo attribution: ${unit.teacher}</span>
           </div>
 
-          <!-- Exact Teacher Quote with YouTube Link -->
+          <!-- Demo quote with source pointer -->
           <div class="text-xs bg-slate-900/80 p-3 rounded-xl border border-slate-700/40 text-slate-300 italic flex items-start justify-between gap-3">
             <div>
               "${unit.quote}"
-              <div class="text-[10px] text-slate-400 not-italic mt-1">स्रोत: यूट्यूब [${unit.time_span}] • SHA-256 सत्यापित</div>
+              <div class="text-[10px] text-amber-200 not-italic mt-1">Demo metadata: YouTube [${unit.time_span}] • provenance independently verified नहीं</div>
             </div>
             <a href="https://youtube.com/watch?v=${unit.video_id}" target="_blank" class="px-2.5 py-1 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-bold text-[10px] shrink-0 transition-all">
-              ▶ वीडियो देखें
+              ▶ source खोलें
             </a>
           </div>
 
@@ -314,10 +319,10 @@
       fb.classList.remove('hidden');
       if (chosen === correct) {
         fb.className = 'text-xs p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 space-y-1';
-        fb.innerHTML = `<strong>✅ बिल्कुल सही! (Correct: ${correct})</strong><br>${exp}`;
+        fb.innerHTML = `<strong>✅ Demo key match (Answer: ${correct})</strong><br>${exp}<br><span class="text-[10px] text-slate-300">यह demo feedback learner efficacy या source correctness का independent proof नहीं है।</span>`;
       } else {
         fb.className = 'text-xs p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-200 space-y-1';
-        fb.innerHTML = `<strong>❌ दोबारा प्रयास करें!</strong> आपने चुना: ${chosen}। हिंट को ध्यान से पढ़ें और फिर से सोचें।`;
+        fb.innerHTML = `<strong>❌ Demo key से match नहीं हुआ।</strong> आपने चुना: ${chosen}। हिंट देखें और फिर सोचें।`;
       }
     }
 
@@ -363,14 +368,14 @@
         return;
       }
 
-      status.className = 'text-xs p-3 rounded-xl bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 space-y-1';
+      status.className = 'text-xs p-3 rounded-xl bg-amber-500/15 text-amber-100 border border-amber-500/40 space-y-1';
       status.innerHTML = `
-        <strong>⚡ GitHub Community Ingestion Form खोला जा रहा है:</strong><br>
+        <strong>GitHub review-request form खोला जा रहा है:</strong><br>
         लिंक: <code>${url}</code><br>
-        स्थिति: आपका सबमिशन सीधे हमारे GitHub Issues पाइपलाइन पर रीडायरेक्ट किया जा रहा है, जहाँ C17 डिडुप्लिकेटर और Parquet एक्सपोर्टर इसे प्रोसेस करेंगे।
+        स्थिति: यह action केवल एक review request बनाता है। C17 cleaning, deduplication, transcript extraction, Parquet export, Hugging Face publish, या final ingestion अपने-आप verified/live नहीं माने जाते। Maintainer review और provenance checks के बाद ही कोई data addition हो सकती है।
       `;
       
-      const cleanTitle = encodeURIComponent('[INGEST]: ' + url.slice(0, 50));
+      const cleanTitle = encodeURIComponent('[INGEST-REQUEST]: ' + url.slice(0, 50));
       const issueUrl = `https://github.com/rajon369963-del/sovereign-study-commons-india/issues/new?template=ingest_lecture_playlist.yml&title=${cleanTitle}`;
       window.open(issueUrl, '_blank');
       document.getElementById('contribUrl').value = '';
