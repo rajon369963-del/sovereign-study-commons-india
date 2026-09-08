@@ -19,6 +19,7 @@ import argparse
 import json
 import sqlite3
 import threading
+import time
 from pathlib import Path
 
 SOURCE = "study_units"
@@ -89,7 +90,6 @@ def main() -> None:
         )
         con.commit()
 
-        # Serial rejection: duplicate an existing durable hash under a different unit_id.
         existing_hash = con.execute(
             f"SELECT sha256_hash FROM {qident(SOURCE)} WHERE unit_id=?", (SEED_UNIT_ID,)
         ).fetchone()
@@ -105,29 +105,41 @@ def main() -> None:
         if not serial_rejected:
             raise AssertionError("serial duplicate full SHA was admitted")
 
-    # Concurrent first-writer race on one previously unused full hash.
     barrier = threading.Barrier(2)
     outcomes: list[tuple[str, str]] = []
-    lock = threading.Lock()
+    outcome_lock = threading.Lock()
 
     def racer(unit_id: str) -> None:
         local = sqlite3.connect(args.db, timeout=10, isolation_level=None)
         local.execute("PRAGMA busy_timeout=10000")
+        barrier.wait(timeout=10)
+        outcome = "LOCK_TIMEOUT"
         try:
-            barrier.wait(timeout=10)
-            local.execute("BEGIN")
-            clone_insert(local, unit_id, CANARY_HASH)
-            local.execute("COMMIT")
-            outcome = "COMMITTED"
-        except sqlite3.IntegrityError:
-            try:
-                local.execute("ROLLBACK")
-            except sqlite3.OperationalError:
-                pass
-            outcome = "REJECTED_UNIQUE"
+            for attempt in range(10):
+                try:
+                    local.execute("BEGIN IMMEDIATE")
+                    clone_insert(local, unit_id, CANARY_HASH)
+                    local.execute("COMMIT")
+                    outcome = "COMMITTED"
+                    break
+                except sqlite3.IntegrityError:
+                    try:
+                        local.execute("ROLLBACK")
+                    except sqlite3.OperationalError:
+                        pass
+                    outcome = "REJECTED_UNIQUE"
+                    break
+                except sqlite3.OperationalError as exc:
+                    try:
+                        local.execute("ROLLBACK")
+                    except sqlite3.OperationalError:
+                        pass
+                    if "locked" not in str(exc).lower() or attempt == 9:
+                        raise
+                    time.sleep(0.05 * (attempt + 1))
         finally:
             local.close()
-        with lock:
+        with outcome_lock:
             outcomes.append((unit_id, outcome))
 
     threads = [threading.Thread(target=racer, args=(unit_id,)) for unit_id in CANARY_UNIT_IDS]
