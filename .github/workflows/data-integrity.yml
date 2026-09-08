@@ -37,6 +37,7 @@ jobs:
           python - <<'PY'
           import hashlib
           import json
+          import re
           import sqlite3
           from pathlib import Path
 
@@ -50,17 +51,123 @@ jobs:
 
           report = {'sqlite': [], 'parquet': []}
 
+          def qident(name):
+              return '"' + name.replace('"', '""') + '"'
+
           for path in sqlite_files:
               with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as con:
                   integrity = con.execute('PRAGMA integrity_check').fetchone()[0]
                   assert integrity == 'ok', f'{path}: integrity_check={integrity!r}'
-                  tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")]
+
+                  objects = {
+                      r[0]: {'type': r[1], 'sql': r[2] or ''}
+                      for r in con.execute(
+                          "SELECT name, type, sql FROM sqlite_master "
+                          "WHERE name NOT LIKE 'sqlite_%' ORDER BY name"
+                      )
+                  }
+                  tables = sorted(name for name, meta in objects.items() if meta['type'] == 'table')
                   assert tables, f'{path}: no user tables'
-                  row_counts = {t: con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0] for t in tables}
+                  row_counts = {
+                      t: con.execute(f'SELECT COUNT(*) FROM {qident(t)}').fetchone()[0]
+                      for t in tables
+                  }
+
+                  # Fail closed on unexplained FTS5 membership drift. Physical SQLite
+                  # integrity is not enough: the search index must represent the intended
+                  # source-table membership, not merely be internally self-consistent.
+                  fts_contracts = []
+                  fts_tables = sorted(
+                      name for name, meta in objects.items()
+                      if meta['type'] == 'table'
+                      and 'VIRTUAL TABLE' in meta['sql'].upper()
+                      and 'USING FTS5' in meta['sql'].upper()
+                  )
+
+                  for fts in fts_tables:
+                      create_sql = objects[fts]['sql']
+                      match = re.search(r"\bcontent\s*=\s*['\"]([^'\"]+)['\"]", create_sql, re.I)
+                      source = match.group(1) if match else None
+                      if not source and fts.endswith('_fts') and fts[:-4] in objects:
+                          source = fts[:-4]
+
+                      shadow_content = f'{fts}_content'
+                      shadow_docsize = f'{fts}_docsize'
+                      contract = {'fts': fts, 'source': source}
+
+                      if source and source in objects and objects[source]['type'] == 'table':
+                          source_ids = {
+                              r[0] for r in con.execute(f'SELECT rowid FROM {qident(source)}')
+                          }
+                          source_count = len(source_ids)
+                          assert source_count == row_counts[source], (
+                              f'{path}:{source}: duplicate/collision in rowid accounting'
+                          )
+                          contract['source_rows'] = source_count
+
+                          indexed_ids = None
+                          if shadow_content in objects:
+                              content_ids = [
+                                  r[0] for r in con.execute(
+                                      f'SELECT id FROM {qident(shadow_content)}'
+                                  )
+                              ]
+                              assert len(content_ids) == len(set(content_ids)), (
+                                  f'{path}:{shadow_content}: duplicate FTS content ids'
+                              )
+                              indexed_ids = set(content_ids)
+                              contract['fts_content_rows'] = len(content_ids)
+                          elif shadow_docsize in objects:
+                              docsize_ids = [
+                                  r[0] for r in con.execute(
+                                      f'SELECT id FROM {qident(shadow_docsize)}'
+                                  )
+                              ]
+                              assert len(docsize_ids) == len(set(docsize_ids)), (
+                                  f'{path}:{shadow_docsize}: duplicate FTS doc ids'
+                              )
+                              indexed_ids = set(docsize_ids)
+                              contract['fts_docsize_rows'] = len(docsize_ids)
+
+                          assert indexed_ids is not None, (
+                              f'{path}:{fts}: cannot prove indexed membership; '
+                              'no auditable FTS content/docsize id set found'
+                          )
+                          missing = sorted(source_ids - indexed_ids)
+                          extra = sorted(indexed_ids - source_ids)
+                          contract['missing_source_rowids'] = missing[:20]
+                          contract['extra_index_rowids'] = extra[:20]
+                          assert not missing and not extra, (
+                              f'{path}:{fts}: unexplained FTS membership drift versus {source}; '
+                              f'missing_source_rowids={missing[:20]}, extra_index_rowids={extra[:20]}'
+                          )
+
+                          if shadow_content in objects and shadow_docsize in objects:
+                              content_ids = {
+                                  r[0] for r in con.execute(
+                                      f'SELECT id FROM {qident(shadow_content)}'
+                                  )
+                              }
+                              docsize_ids = {
+                                  r[0] for r in con.execute(
+                                      f'SELECT id FROM {qident(shadow_docsize)}'
+                                  )
+                              }
+                              assert content_ids == docsize_ids, (
+                                  f'{path}:{fts}: FTS shadow content/docsize membership differs'
+                              )
+                      else:
+                          contract['membership_status'] = 'UNBOUND_SOURCE_TABLE'
+
+                      fts_contracts.append(contract)
+
+                  assert fts_tables, f'{path}: no FTS5 virtual table found; expected search index missing'
+
               report['sqlite'].append({
                   'path': str(path),
                   'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                   'tables': row_counts,
+                  'fts_membership_contracts': fts_contracts,
               })
 
           con = duckdb.connect(database=':memory:')
