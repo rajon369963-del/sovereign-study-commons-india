@@ -1,0 +1,51 @@
+name: R119 apply repair
+
+on:
+  push:
+    branches:
+      - lane4/ssc-ci-integrity-r115
+    paths:
+      - 'data_lake/sqlite/universal_study_lake.sqlite'
+      - 'scripts/repair_fts_sync.py'
+      - '.github/workflows/r119-apply.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: r119-apply-lane4
+  cancel-in-progress: false
+
+jobs:
+  apply-proven-repair:
+    if: github.ref == 'refs/heads/lane4/ssc-ci-integrity-r115'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact branch revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: lane4/ssc-ci-integrity-r115
+          fetch-depth: 1
+
+      - name: Apply and verify R119 repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/repair_fts_sync.py data_lake/sqlite/universal_study_lake.sqlite | tee /tmp/r119-apply-report.json
+          sqlite3 data_lake/sqlite/universal_study_lake.sqlite 'PRAGMA integrity_check;'
+
+      - name: Commit repaired database only when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data_lake/sqlite/universal_study_lake.sqlite; then
+            echo 'No database delta; repair already applied.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data_lake/sqlite/universal_study_lake.sqlite
+          git commit -m 'fix: synchronize study_units and FTS index'
+          git push origin HEAD:lane4/ssc-ci-integrity-r115
