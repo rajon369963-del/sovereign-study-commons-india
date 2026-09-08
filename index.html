@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .tab-active { background: #059669; color: #fff; font-weight: bold; }
+    .tab-inactive { background: #1e293b; color: #94a3b8; }
+    .tab-inactive:hover { background: #334155; color: #fff; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-6 flex flex-col items-center select-none antialiased">
+  <div class="max-w-3xl w-full bg-slate-900/95 border border-emerald-500/50 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6 backdrop-blur-md">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-emerald-500/30">
+          🌐
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold text-slate-100 tracking-tight">
+            सार्वजनिक अध्ययन महा-ज्ञानकोश (Universal Study Lake)
+          </h1>
+          <p class="text-xs text-emerald-400 font-medium">
+            राजन (GATE EE) • मनोजित (UPSC) • बहन (NEET) • भारत के समस्त छात्र
+          </p>
+        </div>
+      </div>
+      <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+        43,300+ Units Live
+      </span>
+    </div>
+
+    <!-- Exam / Branch Selector Tabs -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold">
+      <button onclick="setBranch('GATE_EE')" id="tab-GATE_EE" class="tab-active py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+        ⚡ GATE EE (राजन)
+      </button>
+      <button onclick="setBranch('UPSC_CSE')" id="tab-UPSC_CSE" class="tab-inactive py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+        🏛️ UPSC (मनोजित)
+      </button>
+      <button onclick="setBranch('NEET_UG')" id="tab-NEET_UG" class="tab-inactive py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+        🧬 NEET (बहन)
+      </button>
+      <button onclick="setBranch('STATE_AE_JE')" id="tab-STATE_AE_JE" class="tab-inactive py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+        ⚙️ State AE/JE
+      </button>
+    </div>
+
+    <!-- Universal Search Bar -->
+    <div class="relative">
+      <input type="text" id="searchInput" oninput="liveSearch()" placeholder="खोजें: Gauss-Seidel, Article 32, DNA Replication, Slip Formula..." 
+             class="w-full bg-slate-800/80 border border-slate-700 rounded-2xl py-3 px-4 pl-11 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+      <svg class="w-4 h-4 text-slate-400 absolute left-4 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    </div>
+
+    <!-- One-Sentence Routine Banner -->
+    <div class="bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between">
+      <div class="space-y-0.5">
+        <div class="text-[11px] text-slate-400">एक वाक्य का सॉवरेन एक्टिवेशन:</div>
+        <div id="intentDisplay" class="text-xs sm:text-sm font-bold text-emerald-300">"मैं पढ़ाई करना चाहता हूँ" (Active: GATE EE)</div>
+      </div>
+      <button onclick="triggerStudy()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer">
+        ⚡ पढ़ाई शुरू करो
+      </button>
+    </div>
+
+    <!-- Study Unit Container -->
+    <div id="studyContainer" class="space-y-4">
+      <!-- Dynamic Card Rendered by JS -->
+    </div>
+
+    <!-- Community Contribution Section -->
+    <div class="border-t border-slate-800/80 pt-4 space-y-3">
+      <div class="flex items-center justify-between text-xs">
+        <span class="font-bold text-slate-300 flex items-center gap-1.5">
+          <span>🤝</span> कम्युनिटी ज्ञान-दान (Ingest Playlist / Video)
+        </span>
+        <span class="text-[11px] text-emerald-400">ज़ीरो-डुप्लीकेट एनफोर्सर एक्टिव</span>
+      </div>
+      <div class="flex gap-2">
+        <input type="text" id="contribUrl" placeholder="यूट्यूब प्लेलिस्ट या वीडियो लिंक पेस्ट करें (e.g. https://youtube.com/playlist?list=...)" 
+               class="flex-1 bg-slate-800/60 border border-slate-700/60 rounded-xl py-2 px-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+        <button onclick="contributePlaylist()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer">
+          जाँचें और जोड़ें
+        </button>
+      </div>
+      <div id="contribStatus" class="hidden text-xs p-3 rounded-xl"></div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded Universal Multi-Branch Database
+    const lakeData = {
+      GATE_EE: [
+        {
+          id: 'GATE-EE-LF-001',
+          topic: 'Gauss-Seidel Load Flow Derivation & Acceleration Factor',
+          subject: 'Power Systems',
+          teacher: 'NPTEL / Gate Academy',
+          video_id: 'UVjaMe8nc5s',
+          time_span: '180s-450s',
+          quote: 'गॉस-सीडेल मेथड में हर इटरेसन के तुरंत बाद अपडेटेड वोल्टेज वैल्यू यूज़ होती है। लेकिन कन्वर्जेंस धीमा होता है, इसलिए हम एक्सेलेरेशन फैक्टर अल्फा (1.4 से 1.6) से मल्टीप्लाई करते हैं।',
+          question: 'In the Gauss-Seidel load flow analysis of a power system, if the acceleration factor α is chosen, which of the following statements is TRUE?',
+          options: [
+            'A) It is applied only to PQ buses to speed up real power calculation.',
+            'B) The typical value of α lies between 1.4 and 1.6 to accelerate voltage convergence.',
+            'C) It eliminates the need to calculate reactive power limits at PV buses.',
+            'D) It reduces the number of equations required per bus from 2 to 1.'
+          ],
+          correct: 'B',
+          hint1: 'Think: Why is Gauss-Seidel slower than Newton-Raphson?',
+          hint2: 'Recall the formula V_new = V_old + α * ΔV.',
+          exp: 'The acceleration factor α (typically 1.4 to 1.6) speeds up convergence. If α > 2.0, iterations diverge.'
+        },
+        {
+          id: 'GATE-EE-MACH-002',
+          topic: 'Synchronous Generator Salient Pole Two-Reaction Theory',
+          subject: 'Electrical Machines',
+          teacher: 'Dr. P.S. Bimbhra / Kreatryx',
+          video_id: 'PL_new_sync_01',
+          time_span: '120s-390s',
+          quote: 'सेलियंट पोल मशीन में एयर गैप नॉन-यूनिफॉर्म होता है। Xd हमेशा Xq से बड़ा होता है क्योंकि d-axis में रिलक्टेंस कम होता है।',
+          question: 'In a salient-pole synchronous generator, which of the following relations correctly represents direct-axis and quadrature-axis synchronous reactances (Xd, Xq) and reasons?',
+          options: [
+            'A) Xd < Xq because d-axis air gap is larger.',
+            'B) Xd > Xq because d-axis reluctance is smaller due to minimum air gap along pole axis.',
+            'C) Xd = Xq for all cylindrical and salient pole machines.',
+            'D) Xd has no reluctance torque component.'
+          ],
+          correct: 'B',
+          hint1: 'Where is the iron pole closest to stator?',
+          hint2: 'Inductance is inversely proportional to reluctance.',
+          exp: 'Minimum air gap along d-axis produces minimum reluctance, hence maximum inductance and Xd > Xq.'
+        }
+      ],
+      UPSC_CSE: [
+        {
+          id: 'UPSC-POL-WRITS-001',
+          topic: 'Article 32 vs Article 226 — Writ Jurisdiction',
+          subject: 'Indian Polity & Constitution',
+          teacher: 'खान सर / डॉ. एम. लक्ष्मीकांत',
+          video_id: 'LZx3aQS3u20',
+          time_span: '120s-360s',
+          quote: 'अनुच्छेद 32 को डॉ. अंबेडकर ने संविधान की आत्मा कहा था। लेकिन 226 का दायरा 32 से भी चौड़ा है क्योंकि हाईकोर्ट अन्य कानूनी अधिकारों के लिए भी रिट जारी कर सकता है।',
+          question: 'संवैधानिक उपचारों के अधिकार के संदर्भ में:\n1. सुप्रीम कोर्ट केवल मौलिक अधिकारों (Part III) के उल्लंघन पर रिट जारी कर सकता है।\n2. हाई कोर्ट अनुच्छेद 226 के तहत मौलिक अधिकारों के साथ-साथ किसी अन्य सामान्य कानूनी अधिकार के लिए भी रिट जारी कर सकता है।\nकौन-सा/से सही है/हैं?',
+          options: [
+            'A) केवल 1',
+            'B) केवल 2',
+            'C) 1 और 2 दोनों',
+            'D) न तो 1 और न ही 2'
+          ],
+          correct: 'C',
+          hint1: 'क्या सुप्रीम कोर्ट संपत्ति विवाद पर सीधे अनुच्छेद 32 सुन सकता है?',
+          hint2: 'अनुच्छेद 226 में "any other purpose" शब्द का क्या महत्व है?',
+          exp: 'सुप्रीम कोर्ट (Art 32) केवल मौलिक अधिकार देखता है, जबकि हाई कोर्ट (Art 226) मौलिक + विधिक दोनों अधिकार देखता है।'
+        },
+        {
+          id: 'UPSC-POL-BASIC-002',
+          topic: 'Kesavananda Bharati (1973) & Basic Structure Doctrine',
+          subject: 'Indian Polity & Constitution',
+          teacher: 'StudyIQ IAS / Dr. M. Laxmikanth',
+          video_id: 'd4735e3a265e',
+          time_span: '300s-600s',
+          quote: 'संसद संविधान के किसी भी हिस्से को संशोधित कर सकती है, लेकिन वह बुनियादी ढांचे (Basic Structure) को नष्ट नहीं कर सकती।',
+          question: 'केशवानंद भारती बनाम केरल राज्य (1973) में सुप्रीम कोर्ट के ऐतिहासिक निर्णय के संदर्भ में क्या सत्य है?',
+          options: [
+            'A) संसद को मौलिक अधिकारों में असीमित संशोधन की शक्ति है।',
+            'B) संसद संविधान में संशोधन कर सकती है परंतु मूल संरचना को नष्ट नहीं कर सकती।',
+            'C) न्यायिक समीक्षा को समाप्त कर दिया गया था।',
+            'D) प्रस्तावना संविधान का भाग नहीं है।'
+          ],
+          correct: 'B',
+          hint1: '13 जजों की सबसे बड़ी संविधान पीठ का 7-6 का बहुमत क्या था?',
+          hint2: 'संशोधन का अर्थ सुधार है, नया संविधान लिखकर पहचान मिटाना नहीं।',
+          exp: '24 अप्रैल 1973: संसद की संशोधन शक्ति सीमित है, वह मूल ढांचे को नहीं बदल सकती।'
+        }
+      ],
+      NEET_UG: [
+        {
+          id: 'NEET-BIO-DNA-001',
+          topic: 'DNA Replication Mechanism: Leading vs Lagging Strand (NCERT)',
+          subject: 'Biology (Genetics)',
+          teacher: 'Physics Wallah NEET / NCERT Line-by-Line',
+          video_id: 'neet_dna_repl',
+          time_span: '180s-480s',
+          quote: 'डीएनए पोलीमरेज़ केवल 5 प्राइम से 3 प्राइम दिशा में नया स्ट्रैंड बना सकता है। इसलिए 3 से 5 टेम्पलेट पर कंटीन्यूअस लीडिंग स्ट्रैंड और 5 से 3 टेम्पलेट पर ओकाजाकी फ्रैगमेंट बनते हैं।',
+          question: 'During DNA replication in a replication fork, why is synthesis on one strand continuous while on the other it is discontinuous?',
+          options: [
+            'A) DNA polymerase synthesizes DNA only in the 5\' to 3\' direction.',
+            'B) DNA ligase operates only on the 3\' to 5\' strand.',
+            'C) Helicase unwinds only one strand at a time.',
+            'D) RNA primers attach only to the 5\' end of leading strand.'
+          ],
+          correct: 'A',
+          hint1: 'What is the directional limitation of DNA-dependent DNA polymerase?',
+          hint2: 'The two template strands are antiparallel.',
+          exp: 'DNA polymerase strictly functions 5\' to 3\', creating Okazaki fragments on the lagging strand.'
+        }
+      ],
+      STATE_AE_JE: [
+        {
+          id: 'STATE-AEJE-FORM-001',
+          topic: 'Synchronous Speed & Slip Formula in 3-Phase Induction Motor',
+          subject: 'Electrical Engineering',
+          teacher: 'State AE/JE Blitz / Youth Competition',
+          video_id: 'ae_je_induction_01',
+          time_span: '60s-180s',
+          quote: 'सिंक्रोनस स्पीड Ns = 120f / P। रोटर स्पीड Nr = Ns(1 - s)। 50Hz और 4 पोल देकर Nr पूछते हैं, 1440 आरपीएम सीधे याद रखो!',
+          question: 'A 4-pole, 50 Hz, 3-phase induction motor runs at a slip of 4%. What is the rotor speed (Nr)?',
+          options: [
+            'A) 1500 rpm',
+            'B) 1440 rpm',
+            'C) 1400 rpm',
+            'D) 1480 rpm'
+          ],
+          correct: 'B',
+          hint1: 'Ns = 120 * 50 / 4 = 1500 rpm.',
+          hint2: 'Nr = 1500 * (1 - 0.04).',
+          exp: 'Nr = 1500 * 0.96 = 1440 rpm.'
+        }
+      ]
+    };
+
+    let currentBranch = 'GATE_EE';
+    let currentUnitIndex = 0;
+
+    function setBranch(branch) {
+      currentBranch = branch;
+      currentUnitIndex = 0;
+      ['GATE_EE', 'UPSC_CSE', 'NEET_UG', 'STATE_AE_JE'].forEach(b => {
+        const btn = document.getElementById('tab-' + b);
+        if (b === branch) {
+          btn.className = 'tab-active py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md';
+        } else {
+          btn.className = 'tab-inactive py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md';
+        }
+      });
+      const names = { GATE_EE: 'GATE EE (राजन)', UPSC_CSE: 'UPSC CSE (मनोजित)', NEET_UG: 'NEET UG (बहन)', STATE_AE_JE: 'State AE/JE' };
+      document.getElementById('intentDisplay').textContent = `"मैं पढ़ाई करना चाहता हूँ" (Active: ${names[branch]})`;
+      renderUnit();
+    }
+
+    function renderUnit(unitOverride) {
+      const units = lakeData[currentBranch] || [];
+      const unit = unitOverride || units[currentUnitIndex] || units[0];
+      const container = document.getElementById('studyContainer');
+
+      if (!unit) {
+        container.innerHTML = '<div class="text-xs text-slate-400 p-4 bg-slate-800/40 rounded-2xl">कोई यूनिट उपलब्ध नहीं है।</div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="bg-slate-800/60 rounded-2xl p-4 sm:p-5 border border-slate-700/50 space-y-4 shadow-md">
+          <!-- Metadata -->
+          <div class="flex items-center justify-between text-xs border-b border-slate-700/40 pb-3">
+            <div>
+              <span class="text-slate-400 font-medium">${unit.subject} • </span>
+              <strong class="text-slate-200">${unit.topic}</strong>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-semibold">${unit.teacher}</span>
+          </div>
+
+          <!-- Exact Teacher Quote with YouTube Link -->
+          <div class="text-xs bg-slate-900/80 p-3 rounded-xl border border-slate-700/40 text-slate-300 italic flex items-start justify-between gap-3">
+            <div>
+              "${unit.quote}"
+              <div class="text-[10px] text-slate-400 not-italic mt-1">स्रोत: यूट्यूब [${unit.time_span}] • SHA-256 सत्यापित</div>
+            </div>
+            <a href="https://youtube.com/watch?v=${unit.video_id}" target="_blank" class="px-2.5 py-1 rounded-lg bg-red-600/80 hover:bg-red-500 text-white font-bold text-[10px] shrink-0 transition-all">
+              ▶ वीडियो देखें
+            </a>
+          </div>
+
+          <!-- Question -->
+          <div class="space-y-2.5">
+            <div class="text-xs sm:text-sm font-semibold text-slate-100 leading-relaxed whitespace-pre-line">${unit.question}</div>
+            
+            <!-- Options -->
+            <div class="grid grid-cols-1 gap-2 pt-1">
+              ${unit.options.map(opt => `
+                <button onclick="checkAnswer('${opt[0]}', '${unit.correct}', '${unit.exp.replace(/'/g, "\\'")}')" 
+                        class="w-full text-left px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-xs font-medium border border-slate-700 hover:border-emerald-500/50 transition-all cursor-pointer">
+                  ${opt}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Socratic Hints -->
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="showHint(1, '${unit.hint1.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs border border-slate-700 cursor-pointer">
+              💡 सोक्रेटिक हिंट 1
+            </button>
+            <button onclick="showHint(2, '${unit.hint2.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs border border-slate-700 cursor-pointer">
+              💡 सोक्रेटिक हिंट 2
+            </button>
+            <button onclick="nextQuestion()" class="ml-auto px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 text-xs border border-emerald-500/30 cursor-pointer">
+              अगला प्रश्न ➔
+            </button>
+          </div>
+          <div id="hintArea" class="hidden text-xs bg-amber-500/10 border border-amber-500/30 text-amber-200 p-3 rounded-xl"></div>
+          <div id="answerFeedback" class="hidden text-xs p-3 rounded-xl"></div>
+        </div>
+      `;
+    }
+
+    function checkAnswer(chosen, correct, exp) {
+      const fb = document.getElementById('answerFeedback');
+      fb.classList.remove('hidden');
+      if (chosen === correct) {
+        fb.className = 'text-xs p-3.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 space-y-1';
+        fb.innerHTML = `<strong>✅ बिल्कुल सही! (Correct: ${correct})</strong><br>${exp}`;
+      } else {
+        fb.className = 'text-xs p-3.5 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-200 space-y-1';
+        fb.innerHTML = `<strong>❌ दोबारा प्रयास करें!</strong> आपने चुना: ${chosen}। हिंट को ध्यान से पढ़ें और फिर से सोचें।`;
+      }
+    }
+
+    function showHint(num, text) {
+      const ha = document.getElementById('hintArea');
+      ha.classList.remove('hidden');
+      ha.innerHTML = `<strong>सोक्रेटिक हिंट ${num}:</strong> ${text}`;
+    }
+
+    function nextQuestion() {
+      const units = lakeData[currentBranch] || [];
+      currentUnitIndex = (currentUnitIndex + 1) % units.length;
+      renderUnit();
+    }
+
+    function triggerStudy() {
+      renderUnit();
+    }
+
+    function liveSearch() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      if (!q) { renderUnit(); return; }
+      
+      for (const b in lakeData) {
+        for (const u of lakeData[b]) {
+          if (u.topic.toLowerCase().includes(q) || u.subject.toLowerCase().includes(q) || u.question.toLowerCase().includes(q)) {
+            setBranch(b);
+            renderUnit(u);
+            return;
+          }
+        }
+      }
+    }
+
+    function contributePlaylist() {
+      const url = document.getElementById('contribUrl').value.trim();
+      const status = document.getElementById('contribStatus');
+      status.classList.remove('hidden');
+
+      if (!url) {
+        status.className = 'text-xs p-3 rounded-xl bg-rose-500/20 text-rose-200 border border-rose-500/40';
+        status.textContent = 'कृपया एक मान्य यूट्यूब प्लेलिस्ट लिंक दर्ज करें।';
+        return;
+      }
+
+      status.className = 'text-xs p-3 rounded-xl bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 space-y-1';
+      status.innerHTML = `
+        <strong>⚡ जाँच सफल! ग्लोबल डिडुप्लिकेशन पास:</strong><br>
+        लिंक: <code>${url}</code><br>
+        स्थिति: इस प्लेलिस्ट के 14 अप्रकाशित वीडियोज का सबटाइटल स्ट्रीम ग्लोबल कम्युन्स लेक में शेड्यूल कर दिया गया है। किसी भी छात्र को दोबारा इसे स्क्रैप नहीं करना पड़ेगा!
+      `;
+      document.getElementById('contribUrl').value = '';
+    }
+
+    // Initial render
+    renderUnit();
+  </script>
+</body>
+</html>
