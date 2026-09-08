@@ -12,6 +12,7 @@ This project should be easy to improve without requiring contributors to underst
 - Check existing tools, libraries, actions, and repository code before introducing a new dependency.
 - Treat a stored SHA-256 as evidence about exact bytes only. Do not infer semantic content identity or add a uniqueness constraint until the canonical payload fields/bytes, canonicalization rules, hash algorithm/version, and independent recomputation procedure are explicitly defined.
 - For identity-bearing structured fields, canonicalize by semantic type before hashing or deduplication. A JSON object needs a deterministic semantic representation (for example RFC 8785/JCS when the domain fits); a timestamp/range needs explicitly parsed start/end values plus unit/timebase. Do not treat arbitrary display serialization, key order, whitespace, or formatting as semantic identity unless the contract explicitly declares representation-sensitive identity.
+- Treat corrections to identity-bearing evidence anchors as revisions, not silent replacements. Preserve enough lineage to reconstruct the prior anchor, corrected anchor, source/version evidence, reason, actor/process, and receipt or causal event before any dedupe/hash identity decision changes.
 
 ## Rung 0 — zero-code truth and documentation fixes
 
@@ -35,10 +36,11 @@ Good contributions:
 - Classify license/usage status without copying copyrighted content into the repo.
 - Add retrieval dates and source locators to a manifest.
 - When recording hashes, state exactly what bytes were hashed and which algorithm/version produced the value; snapshot uniqueness alone is not a semantic identity contract.
+- When correcting an identity-bearing quote, locator, source version, or evidence span, record the previous value, corrected value, authoritative evidence, source/version, correction reason, and actor/process/receipt instead of overwriting provenance silently.
 
 Current small task: [Issue #2 — dataset manifest/provenance](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/2).
 
-**Acceptance test:** every changed row points to a retrievable source and has enough provenance for an independent reviewer to reproduce the classification. Hash-bearing rows additionally identify the hashed payload and algorithm/version so another reviewer can recompute the value.
+**Acceptance test:** every changed row points to a retrievable source and has enough provenance for an independent reviewer to reproduce the classification. Hash-bearing rows additionally identify the hashed payload and algorithm/version so another reviewer can recompute the value. Evidence-anchor corrections additionally let a reviewer reconstruct the before/after anchor and decide whether the revision is cosmetic, substantive, or a source-version change without trusting the contributor's label.
 
 ## Rung 2 — reproducible query examples and smoke tests
 
@@ -76,8 +78,9 @@ Good contributions:
 - Add a deterministic conversion step that preserves provenance and license metadata.
 - Define a canonical content-identity contract before deduplication or schema-level uniqueness: payload fields/bytes, canonicalization, hash algorithm/version, and an independent recomputation test must be explicit first.
 - Add paired adversarial SAME/DISTINCT fixtures for every structured identity-bearing field. Equivalent JSON key order/whitespace or equivalent range formatting should remain SAME when semantics are unchanged; changed option content or changed parsed range endpoints should be DISTINCT.
+- Add revision-lineage adversaries for identity-bearing evidence anchors: cosmetic correction with unchanged authoritative source, substantive correction under the same source/version, and genuinely new source/version. The identity decision must be derived from the versioned adjudication rule and evidence, not from byte difference alone.
 
-**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes. Do not promote a uniqueness migration merely because the current snapshot happens to contain no duplicate hashes. For structured fields, the acceptance court must prove semantic invariance across alternate serializations and semantic separation across genuinely different values, unless the versioned identity contract explicitly chooses representation-sensitive identity.
+**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes. Do not promote a uniqueness migration merely because the current snapshot happens to contain no duplicate hashes. For structured fields, the acceptance court must prove semantic invariance across alternate serializations and semantic separation across genuinely different values, unless the versioned identity contract explicitly chooses representation-sensitive identity. For evidence-anchor corrections, silent in-place replacement is insufficient: preserve revision lineage and fail closed when the correction cannot be adjudicated from authoritative source/version evidence.
 
 ## Rung 5 — CI, workflows, Pages, and external sync
 
