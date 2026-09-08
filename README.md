@@ -1,6 +1,6 @@
 # ⚡ Sovereign Study Commons India (सार्वजनिक अध्ययन महा-ज्ञानकोश)
 
-[![Hugging Face Datasets](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset%20Hub-yellow.svg)](https://huggingface.co/datasets/rajon369963-del/sovereign-study-lake-india)
+[![Hugging Face Pipeline](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Pipeline%20Ready%20(Awaiting%20Token)-amber.svg)](#hugging-face-status)
 [![DuckDB Queryable](https://img.shields.io/badge/DuckDB-Parquet%20HTTP%20Range%20Ready-blue.svg)](https://duckdb.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Branch Coverage](https://img.shields.io/badge/Coverage-GATE%20EE%20%7C%20UPSC%20%7C%20NEET%20%7C%20AE%2FJE-purple.svg)](#)
@@ -8,6 +8,14 @@
 
 > **"जब लोगों ने ऑलरेडी चक्का बना लिया है, उस चक्के को जोड़ो!"**  
 > भारत के प्रत्येक छात्र के लिए एक सार्वजनिक, खुला और कभी न रुकने वाला अध्ययन महा-ज्ञानकोश।
+
+> [!NOTE]
+> **Live Truth Status (Verified 8 Sep 2026)**:
+> - **GitHub Repository**: LIVE & Public (`rajon369963-del/sovereign-study-commons-india`)
+> - **Live Web Cockpit (GitHub Pages)**: LIVE at [https://rajon369963-del.github.io/sovereign-study-commons-india/](https://rajon369963-del.github.io/sovereign-study-commons-india/)
+> - **Verified Parquet Assets**: 11 Multi-Branch Socratic Units + 5,000 GATE EE PYQs + 5,000 UPSC Polity Videos.
+> - **Ingestion Automation**: Issue Template LIVE in `.github/ISSUE_TEMPLATE/`; Workflow template staged in `workflows_template/`.
+> - **Hugging Face Hub**: Sync pipeline configured in workflow; live upload pending token authorization.
 
 ---
 

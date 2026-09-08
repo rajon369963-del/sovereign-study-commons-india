@@ -30,7 +30,7 @@
         </div>
       </div>
       <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-        43,300+ Units Live
+        11 Socratic Mastery Units (Parquet Verified) • 5k GATE PYQs • 5k UPSC Videos
       </span>
     </div>
 
@@ -357,18 +357,22 @@
       const status = document.getElementById('contribStatus');
       status.classList.remove('hidden');
 
-      if (!url) {
+      if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
         status.className = 'text-xs p-3 rounded-xl bg-rose-500/20 text-rose-200 border border-rose-500/40';
-        status.textContent = 'कृपया एक मान्य यूट्यूब प्लेलिस्ट लिंक दर्ज करें।';
+        status.textContent = 'कृपया एक मान्य यूट्यूब प्लेलिस्ट या वीडियो लिंक दर्ज करें (उदा. https://www.youtube.com/playlist?list=...)';
         return;
       }
 
       status.className = 'text-xs p-3 rounded-xl bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 space-y-1';
       status.innerHTML = `
-        <strong>⚡ जाँच सफल! ग्लोबल डिडुप्लिकेशन पास:</strong><br>
+        <strong>⚡ GitHub Community Ingestion Form खोला जा रहा है:</strong><br>
         लिंक: <code>${url}</code><br>
-        स्थिति: इस प्लेलिस्ट के 14 अप्रकाशित वीडियोज का सबटाइटल स्ट्रीम ग्लोबल कम्युन्स लेक में शेड्यूल कर दिया गया है। किसी भी छात्र को दोबारा इसे स्क्रैप नहीं करना पड़ेगा!
+        स्थिति: आपका सबमिशन सीधे हमारे GitHub Issues पाइपलाइन पर रीडायरेक्ट किया जा रहा है, जहाँ C17 डिडुप्लिकेटर और Parquet एक्सपोर्टर इसे प्रोसेस करेंगे।
       `;
+      
+      const cleanTitle = encodeURIComponent('[INGEST]: ' + url.slice(0, 50));
+      const issueUrl = `https://github.com/rajon369963-del/sovereign-study-commons-india/issues/new?template=ingest_lecture_playlist.yml&title=${cleanTitle}`;
+      window.open(issueUrl, '_blank');
       document.getElementById('contribUrl').value = '';
     }
 
