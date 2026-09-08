@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """Deterministic, fail-closed oracle for proposed Content Identity v1.
 
-This is a comparison/audit helper only. It performs no database writes and does
-not authorize hash migration or uniqueness constraints.
+Comparison/audit helper only. No database writes, hash migration, or uniqueness constraints.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
-from dataclasses import dataclass
 from typing import Any
 
 SAME = "SAME"
@@ -26,12 +24,25 @@ def trim(value: Any) -> str:
     return "" if value is None else str(value).strip()
 
 
+def _reject_duplicate_object_pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError(f"duplicate JSON object key: {key}")
+        out[key] = value
+    return out
+
+
+def parse_json_fail_closed(raw: str) -> Any:
+    try:
+        return json.loads(raw, object_pairs_hook=_reject_duplicate_object_pairs)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid options_json: {exc.msg}") from exc
+
+
 def canonical_json(raw: Any) -> str:
     if isinstance(raw, str):
-        try:
-            value = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"invalid options_json: {exc.msg}") from exc
+        value = parse_json_fail_closed(raw)
     else:
         value = raw
     if not isinstance(value, (dict, list)):
@@ -40,11 +51,15 @@ def canonical_json(raw: Any) -> str:
 
 
 def option_labels(raw: Any) -> set[str]:
-    value = json.loads(canonical_json(raw))
+    if isinstance(raw, str):
+        value = parse_json_fail_closed(raw)
+    else:
+        value = raw
     if isinstance(value, dict):
         return {trim(k) for k in value.keys()}
-    # Array options are position-bearing. Accept only explicit integer labels.
-    return {str(i + 1) for i in range(len(value))}
+    if isinstance(value, list):
+        return {str(i + 1) for i in range(len(value))}
+    raise ValueError("options_json must decode to object or array")
 
 
 _TIME_RE = re.compile(r"^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})$")
@@ -134,23 +149,13 @@ def record_decision(base_raw: Any, cand_raw: Any) -> dict[str, Any]:
             return {"decision": CONFLICT, "reason": "same canonical evidence has contradictory correct_opt"}
         if base["explanation"] == cand["explanation"]:
             return {"decision": SAME, "reason": "canonical learner/source semantics identical"}
-        return {
-            "decision": CONFLICT,
-            "reason": "explanation changed but compatibility is not mechanically decidable",
-            "adjudication": HUMAN,
-        }
+        return {"decision": CONFLICT, "reason": "explanation changed but compatibility is not mechanically decidable", "adjudication": HUMAN}
 
-    # A span-only or locator-only change is ambiguous: it may be a moved/corrected
-    # locator rather than a new learner unit. Do not guess.
     payload_changed = any(k in changed for k in ("question_text", "options_json", "exact_quote"))
     locator_changed = any(k in changed for k in ("exam_branch", "video_id", "timestamp_span"))
     if payload_changed and locator_changed:
         return {"decision": DISTINCT, "reason": "both canonical source locator and evidence payload changed"}
-    return {
-        "decision": CONFLICT,
-        "reason": "identity-bearing change is insufficient to prove SAME or DISTINCT automatically",
-        "adjudication": HUMAN,
-    }
+    return {"decision": CONFLICT, "reason": "identity-bearing change is insufficient to prove SAME or DISTINCT automatically", "adjudication": HUMAN}
 
 
 def decide(fixture: dict[str, Any]) -> dict[str, Any]:
