@@ -10,6 +10,7 @@ This project should be easy to improve without requiring contributors to underst
 - Do not add private learner data, harvested contacts, credentials, or secrets.
 - Do not describe staged workflows, Hugging Face sync, Pages, dataset counts, or automation as live unless a newcomer can independently reproduce the claim.
 - Check existing tools, libraries, actions, and repository code before introducing a new dependency.
+- Treat a stored SHA-256 as evidence about exact bytes only. Do not infer semantic content identity or add a uniqueness constraint until the canonical payload fields/bytes, canonicalization rules, hash algorithm/version, and independent recomputation procedure are explicitly defined.
 
 ## Rung 0 — zero-code truth and documentation fixes
 
@@ -32,10 +33,11 @@ Good contributions:
 - Add or repair source provenance records.
 - Classify license/usage status without copying copyrighted content into the repo.
 - Add retrieval dates and source locators to a manifest.
+- When recording hashes, state exactly what bytes were hashed and which algorithm/version produced the value; snapshot uniqueness alone is not a semantic identity contract.
 
 Current small task: [Issue #2 — dataset manifest/provenance](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/2).
 
-**Acceptance test:** every changed row points to a retrievable source and has enough provenance for an independent reviewer to reproduce the classification.
+**Acceptance test:** every changed row points to a retrievable source and has enough provenance for an independent reviewer to reproduce the classification. Hash-bearing rows additionally identify the hashed payload and algorithm/version so another reviewer can recompute the value.
 
 ## Rung 2 — reproducible query examples and smoke tests
 
@@ -71,8 +73,9 @@ Good contributions:
 - Repair a parser on a frozen public fixture.
 - Improve deduplication or schema validation with regression tests.
 - Add a deterministic conversion step that preserves provenance and license metadata.
+- Define a canonical content-identity contract before deduplication or schema-level uniqueness: payload fields/bytes, canonicalization, hash algorithm/version, and an independent recomputation test must be explicit first.
 
-**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes.
+**Required before merge:** fixture-based regression test, failure case, rollback path, and maintainer review. Do not activate external sync or ingestion just because a parser test passes. Do not promote a uniqueness migration merely because the current snapshot happens to contain no duplicate hashes.
 
 ## Rung 5 — CI, workflows, Pages, and external sync
 
@@ -88,7 +91,7 @@ Good contributions only after lower-level contracts exist:
 
 ## Maintainer / verifier split
 
-For claims that affect deployment, automation, dataset integrity, provenance, or learner-facing behavior, the producer should not be the final verifier. A second reviewer should reproduce the acceptance test from current public state before the claim is promoted from **STAGED/UNVERIFIED** to **VERIFIED**.
+For claims that affect deployment, automation, dataset integrity, provenance, semantic identity, or learner-facing behavior, the producer should not be the final verifier. A second reviewer should reproduce the acceptance test from current public state before the claim is promoted from **STAGED/UNVERIFIED** to **VERIFIED**.
 
 ## How the repository surfaces connect
 
@@ -100,7 +103,7 @@ For claims that affect deployment, automation, dataset integrity, provenance, or
 
 `Issues / issue templates` → hold bounded tasks with acceptance tests and provenance context.
 
-`DATASET_CARD` + provenance manifests → define dataset meaning, source lineage, and usage constraints.
+`DATASET_CARD` + provenance manifests → define dataset meaning, source lineage, usage constraints, and the payload identity contract used by any hashes or deduplication.
 
 `ROADMAP` → separates staged work from verified capabilities.
 
