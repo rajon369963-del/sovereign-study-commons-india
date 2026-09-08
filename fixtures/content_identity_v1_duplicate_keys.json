@@ -1,0 +1,21 @@
+{
+  "contract_version": "content_identity_v1_duplicate_key_fail_closed",
+  "repo_task_id": "SSC-R133-DUPLICATE-JSON-KEY-FAIL-CLOSED-V1",
+  "status": "PROPOSED_NO_DB_MIGRATION",
+  "fixtures": [
+    {
+      "id": "CI-V1-015",
+      "adversary": "duplicate_top_level_option_key",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-dup","timestamp_span":"00:10-00:20","question_text":"Dup?","options_json":"{\"A\":\"right\",\"B\":\"x\"}","correct_opt":"A","explanation":"A.","exact_quote":"Dup?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-dup","timestamp_span":"00:10-00:20","question_text":"Dup?","options_json":"{\"A\":\"wrong\",\"A\":\"right\",\"B\":\"x\"}","correct_opt":"A","explanation":"A.","exact_quote":"Dup?"},
+      "expected": "CONFLICT_OR_INVALID"
+    },
+    {
+      "id": "CI-V1-016",
+      "adversary": "duplicate_nested_option_key",
+      "base": {"exam_branch":"GATE-EE","video_id":"vid-dup2","timestamp_span":"00:30-00:40","question_text":"Nested dup?","options_json":"{\"A\":{\"value\":1,\"unit\":\"pu\"},\"B\":{\"value\":2,\"unit\":\"pu\"}}","correct_opt":"A","explanation":"A.","exact_quote":"Nested dup?"},
+      "candidate": {"exam_branch":"GATE-EE","video_id":"vid-dup2","timestamp_span":"00:30-00:40","question_text":"Nested dup?","options_json":"{\"A\":{\"value\":9,\"value\":1,\"unit\":\"pu\"},\"B\":{\"value\":2,\"unit\":\"pu\"}}","correct_opt":"A","explanation":"A.","exact_quote":"Nested dup?"},
+      "expected": "CONFLICT_OR_INVALID"
+    }
+  ]
+}
