@@ -23,7 +23,7 @@ Good contributions:
 - Fix a broken link, ambiguous status label, typo, or stale setup instruction.
 - Improve a glossary entry so a newcomer can understand a dataset field or exam branch.
 
-Current small task: [Issue #52 — repair stale Contributor Ladder task links](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/52).
+Current small task: [Issue #56 — verify the public Issue chooser renders the intended bounded intake](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/56).
 
 **Acceptance test:** another person can follow the edited text and reach the same factual conclusion from public evidence.
 
