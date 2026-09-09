@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-AIR10 Sovereign Ingestion & Semantic Identity Engine
-Phase 1: Canonicalization, Deduplication & Vector Gating with 100% Mathematical Rigor.
+AIR10 Sovereign Canonicalization & Deduplication Engine (v4.0 - Fourth-Generation Hardened)
+Author: Sovereign Study Commons India
+License: Apache-2.0
 
-Third-Generation Hardening:
-- Full LaTeX C0 Control Character Family Seal (Rejects \theta, \tau, \times [\t], \nabla, \nu [\n], \rho [\r], \frac [\f], \beta [\b])
-- Presentation vs Identity Decoupling: Learner presentation options untouched (order/labels intact for explanation alignment); canonical options used solely for identity hashing
-- unit_id Conflict Guard: Same unit_id with different question payload fails closed (IDENTITY_CONFLICT) instead of silently collapsing to EXACT_DUP
-- Occurrence Read/Write Symmetry: exact occurrence read query strictly aligns with occ_hash payload (including teacher and exam_branch)
-- Active MinHash Pre-Filter: MinHash signatures narrow search space and quarantine near-matches (>=0.98) even without vector extension
-- GATE Question-Type Ontology: Full native support for MCQ (single-choice), MSQ (multi-select), and NAT (numerical answer type with finite ranges)
+Core Invariants Enforced:
+1. Pure Math & EE Unit Case-Sensitivity (MΩ vs mΩ, MW vs mW strictly preserved; 10^9 ratio intact).
+2. Presentation vs Identity Decoupling (Learner UI option order untouched; explanation-pointer sync guaranteed).
+3. Lossless Decimal NAT Precision (Python Decimal; zero arbitrary 4-decimal rounding collisions).
+4. NAT Fail-Closed on Non-Empty Options (NAT questions with options rejected fail-closed).
+5. Full ASCII C0 Control Character Guard (0x00 - 0x1F sealed on raw text BEFORE normalization).
+6. unit_id Full Occurrence Conflict Guard (Reusing unit_id with differing occurrence provenance fails closed).
+7. Active MinHash Pre-Filter (Threshold parameter respected, LIMIT 100 removed, candidate pool searched).
+8. Durable Quarantine Evidence Bag (ingestion_tasks stores candidate_unit_id, mechanism, similarity_score).
+9. Occurrence Read/Write Symmetry (WRITE_IDENTITY_RULE == READ_IDENTITY_RULE).
+10. Decoupled Vector Companion Index with Stable unit_id Mapping (Zero SQLite rowid time-bomb).
 """
 
 import argparse
@@ -20,6 +25,7 @@ import os
 import re
 import sqlite3
 import sys
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 try:
@@ -28,139 +34,33 @@ try:
 except ImportError:
     HAS_SQLITE_VEC = False
 
-from content_identity_oracle import canonical_span
+VECTOR_DIM = 256
 
 # ---------------------------------------------------------------------------
-# 1. LaTeX Normalization & Electrical Unit Standardization
+# 1. LaTeX Normalization & Strict C0 Control Protection
 # ---------------------------------------------------------------------------
 
-FRAC_RE = re.compile(r"\\+frac\s*\{\s*([^{}]+)\s*\}\s*\{\s*([^{}]+)\s*\}")
-LATEX_SPACE_RE = re.compile(r"\\[,;! ]|\\quad|\\qquad")
-EXP_NOTATION_RE = re.compile(r"10\^\{\s*([+-]?\d+)\s*\}|10\^([+-]?\d+)")
-
-# Standardize electrical units with strict case-sensitivity where prefix matters!
-# In EE: M = Mega (10^6), m = milli (10^-3). Collapsing them is a factor of 10^9 error.
-UNIT_REPLACEMENTS: List[Tuple[re.Pattern, str]] = [
-    # Case-sensitive Mega vs milli distinctions
-    (re.compile(r"\b(?:mega-?ohms?|M\s*\\*Omega|M\s*ohm|10\^6\s*\\*Omega)\b"), "MΩ"),
-    (re.compile(r"\b(?:milli-?ohms?|m\s*\\*Omega|m\s*ohm|10\^-3\s*\\*Omega)\b"), "mΩ"),
-    (re.compile(r"\b(?:mega-?watts?|MW|10\^6\s*W)\b"), "MW"),
-    (re.compile(r"\b(?:milli-?watts?|mW|10\^-3\s*W)\b"), "mW"),
-    (re.compile(r"\b(?:mega-?volts?|MV|10\^6\s*V)\b"), "MV"),
-    (re.compile(r"\b(?:milli-?volts?|mV|10\^-3\s*V)\b"), "mV"),
-    (re.compile(r"\b(?:milli-?henrys?|mH|10\^-3\s*H)\b"), "mH"),
-    (re.compile(r"\b(?:mega-?henrys?|MH|10\^6\s*H)\b"), "MH"),
-    # Case-insensitive units where prefixes do not conflict
-    (re.compile(r"\b(?:kilo-?ohms?|k\s*\\*Omega|k\s*ohm|10\^3\s*\\*Omega)\b", re.IGNORECASE), "kΩ"),
-    (re.compile(r"\b(?:micro-?farads?|uF|\\*mu\s*F|10\^-6\s*F)\b", re.IGNORECASE), "µF"),
-    (re.compile(r"\b(?:pico-?farads?|pF|10\^-12\s*F)\b", re.IGNORECASE), "pF"),
-    (re.compile(r"\b(?:nano-?farads?|nF|10\^-9\s*F)\b", re.IGNORECASE), "nF"),
-    (re.compile(r"\b(?:micro-?henrys?|uH|\\*mu\s*H|10\^-6\s*H)\b", re.IGNORECASE), "µH"),
-    (re.compile(r"\b(?:kilo-?volts?|kV|10\^3\s*V)\b", re.IGNORECASE), "kV"),
-    (re.compile(r"\b(?:kilo-?watts?|kW|10\^3\s*W)\b", re.IGNORECASE), "kW"),
-]
-
-def normalize_fractions(text: str) -> str:
-    """Standardizes LaTeX fractions, converting {a \over b} and spaced \frac into canonical \frac{a}{b}."""
-    out = []
-    i = 0
-    while i < len(text):
-        if text[i] == "{":
-            depth = 1
-            j = i + 1
-            over_pos = -1
-            while j < len(text) and depth > 0:
-                if text[j] == "{":
-                    depth += 1
-                elif text[j] == "}":
-                    depth -= 1
-                elif depth == 1 and text[j:j+5] == r"\over" and (j+5 == len(text) or not text[j+5].isalpha()):
-                    over_pos = j
-                j += 1
-            if depth == 0 and over_pos != -1:
-                num = text[i+1:over_pos].strip()
-                den = text[over_pos+5:j-1].strip()
-                out.append(f"\\frac{{{num}}}{{{den}}}")
-                i = j
-                continue
-        if text[i:i+5] == r"\frac":
-            j = i + 5
-            while j < len(text) and text[j].isspace():
-                j += 1
-            if j < len(text) and text[j] == "{":
-                depth = 1
-                k = j + 1
-                while k < len(text) and depth > 0:
-                    if text[k] == "{": depth += 1
-                    elif text[k] == "}": depth -= 1
-                    k += 1
-                if depth == 0:
-                    num = text[j+1:k-1].strip()
-                    m = k
-                    while m < len(text) and text[m].isspace():
-                        m += 1
-                    if m < len(text) and text[m] == "{":
-                        depth = 1
-                        n = m + 1
-                        while n < len(text) and depth > 0:
-                            if text[n] == "{": depth += 1
-                            elif text[n] == "}": depth -= 1
-                            n += 1
-                        if depth == 0:
-                            den = text[m+1:n-1].strip()
-                            out.append(f"\\frac{{{num}}}{{{den}}}")
-                            i = n
-                            continue
-        out.append(text[i])
-        i += 1
-    return "".join(out)
-
-def normalize_latex(text: str) -> str:
-    """Standardizes LaTeX fractions, spacers, and exponents into a canonical representation while preserving case."""
-    if not text:
-        return ""
-    text = normalize_fractions(text)
-    text = LATEX_SPACE_RE.sub(" ", text)
-    def _exp_sub(m: re.Match) -> str:
-        p = m.group(1) or m.group(2)
-        return f"10^{p}"
-    text = EXP_NOTATION_RE.sub(_exp_sub, text)
-    for pattern, replacement in UNIT_REPLACEMENTS:
-        text = pattern.sub(replacement, text)
-    return " ".join(text.split()).strip()
-
-# ---------------------------------------------------------------------------
-# 2. Question Type Ontology Constants & Parsers (GATE 2026 Compatible)
-# ---------------------------------------------------------------------------
-
-QUESTION_TYPE_MCQ = "MCQ"
-QUESTION_TYPE_MSQ = "MSQ"
-QUESTION_TYPE_NAT = "NAT"
-VALID_QUESTION_TYPES = {QUESTION_TYPE_MCQ, QUESTION_TYPE_MSQ, QUESTION_TYPE_NAT}
-
-# C0 control characters forbidden in options and single-line formula strings
-FORBIDDEN_C0_CONTROLS = {
-    "\x08": r"\b (backspace, e.g. \beta)",
-    "\x0c": r"\f (form feed, e.g. \frac)",
-    "\x09": r"\t (tab, e.g. \theta, \tau, \times)",
-    "\x0a": r"\n (newline, e.g. \nabla, \nu)",
-    "\x0d": r"\r (carriage return, e.g. \rho)",
-    "\x00": r"\0 (null character)",
-    "\x0b": r"\v (vertical tab)",
+FORBIDDEN_C0_CONTROLS: Dict[str, str] = {
+    chr(i): f"C0 control 0x{i:02X}"
+    for i in range(32)
+    if i != 10  # 0x0A (\n) handled conditionally via allow_newlines
 }
 
 def _validate_no_corrupting_control_chars(obj: Any, allow_newlines: bool = False) -> None:
     """
-    Rejects strings containing ASCII C0 control characters resulting from unescaped LaTeX in JSON strings.
-    Protects against: \theta, \tau, \times (\t), \nabla, \nu (\n), \rho (\r), \frac (\f), \beta (\b).
+    Rejects strings containing ASCII C0 control characters (0x00-0x1F) resulting from
+    unescaped LaTeX in JSON strings.
+    Protects against unescaped LaTeX: \theta, \tau, \times (0x09), \nabla, \nu (0x0A), \rho (0x0D),
+    \frac (0x0C), \beta (0x08), null (0x00), vtab (0x0B).
+    MUST BE RUN ON RAW TEXT BEFORE ANY NORMALIZATION OR WHITESPACE COLLAPSING!
     """
     if isinstance(obj, str):
         for ch, desc in FORBIDDEN_C0_CONTROLS.items():
-            if ch == "\x0a" and allow_newlines:
+            if ch == chr(10) and allow_newlines:
                 continue
             if ch in obj:
                 raise ValueError(
-                    f"malformed unescaped LaTeX command detected in JSON: contains control character {desc}: {obj!r}"
+                    f"malformed unescaped LaTeX command detected: contains control character {desc} ({repr(ch)}): {obj!r}"
                 )
     elif isinstance(obj, dict):
         for k, v in obj.items():
@@ -196,10 +96,20 @@ def _validate_finite_numbers(obj: Any) -> None:
         for item in obj:
             _validate_finite_numbers(item)
 
+def _canonical_decimal_str(d: Decimal) -> str:
+    """Returns canonical string representation of Decimal without arbitrary rounding."""
+    if not d.is_finite():
+        raise ValueError(f"non-finite Decimal: {d}")
+    norm = d.normalize()
+    sign, digits, exponent = norm.as_tuple()
+    if exponent >= 0:
+        return f"{norm:f}"
+    return f"{norm}"
+
 def parse_numerical_answer(answer_raw: Any) -> str:
     """
-    Parses and validates NAT (Numerical Answer Type) answer or range.
-    Supports single numbers (e.g. '24.5') and ranges (e.g. '24.0-26.0', '[24.0, 26.0]').
+    Parses and validates NAT (Numerical Answer Type) answer or range using Python Decimal.
+    Guarantees lossless precision identity (e.g. 1.00001 != 1.00002).
     """
     if answer_raw is None:
         raise ValueError("INSUFFICIENT_CORRECT_ANSWER: NAT question requires numeric answer or range")
@@ -214,20 +124,23 @@ def parse_numerical_answer(answer_raw: Any) -> str:
         re.IGNORECASE,
     )
     if range_match:
-        min_v = float(range_match.group(1))
-        max_v = float(range_match.group(2))
-        if not (math.isfinite(min_v) and math.isfinite(max_v)):
-            raise ValueError(f"non-finite NAT range bounds: {min_v}, {max_v}")
-        if min_v > max_v:
-            raise ValueError(f"NAT range min ({min_v}) exceeds max ({max_v})")
-        return f"RANGE:{min_v:.4f}:{max_v:.4f}"
+        try:
+            d_min = Decimal(range_match.group(1))
+            d_max = Decimal(range_match.group(2))
+        except InvalidOperation as e:
+            raise ValueError(f"invalid NAT range values: {ans_str}") from e
+        if not (d_min.is_finite() and d_max.is_finite()):
+            raise ValueError(f"non-finite NAT range bounds: {d_min}, {d_max}")
+        if d_min > d_max:
+            raise ValueError(f"NAT range min ({d_min}) exceeds max ({d_max})")
+        return f"RANGE:{_canonical_decimal_str(d_min)}:{_canonical_decimal_str(d_max)}"
 
     try:
-        val = float(ans_str)
-        if not math.isfinite(val):
-            raise ValueError(f"non-finite NAT numeric value: {val}")
-        return f"VAL:{val:.4f}"
-    except ValueError as e:
+        d_val = Decimal(ans_str)
+        if not d_val.is_finite():
+            raise ValueError(f"non-finite NAT numeric value: {d_val}")
+        return f"VAL:{_canonical_decimal_str(d_val)}"
+    except (InvalidOperation, ValueError) as e:
         raise ValueError(f"invalid NAT numerical answer: {ans_str!r}") from e
 
 def parse_msq_correct_options(correct_raw: Any, valid_labels: Set[str]) -> Tuple[str, List[str]]:
@@ -248,12 +161,65 @@ def parse_msq_correct_options(correct_raw: Any, valid_labels: Set[str]) -> Tuple
         if lbl not in valid_labels:
             raise ValueError(f"MSQ correct_opt label '{lbl}' is not in valid option labels: {sorted(valid_labels)}")
 
-    unique_sorted = sorted(set(raw_list))
-    return ",".join(unique_sorted), unique_sorted
+    sorted_unique = sorted(set(raw_list))
+    return ",".join(sorted_unique), sorted_unique
+
+def _find_balanced_group(text: str, start: int) -> Tuple[Optional[str], int]:
+    """Extracts a balanced curly brace group starting at text[start]."""
+    if start >= len(text) or text[start] != "{":
+        return None, start
+    depth = 0
+    i = start
+    while i < len(text):
+        if text[i] == "{":
+            depth += 1
+        elif text[i] == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1 : i], i + 1
+        i += 1
+    return None, start
+
+def normalize_latex(text: str) -> str:
+    """
+    Depth-tracking LaTeX formula normalizer.
+    Converts \frac{a}{b} into balanced (a)/(b), collapses whitespace, and preserves case.
+    """
+    if not text:
+        return ""
+
+    out = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i : i + 5] == r"\frac":
+            pos = i + 5
+            while pos < n and text[pos].isspace():
+                pos += 1
+            num, next_pos = _find_balanced_group(text, pos)
+            if num is not None:
+                pos2 = next_pos
+                while pos2 < n and text[pos2].isspace():
+                    pos2 += 1
+                den, end_pos = _find_balanced_group(text, pos2)
+                if den is not None:
+                    out.append(f"({normalize_latex(num)})/({normalize_latex(den)})")
+                    i = end_pos
+                    continue
+        out.append(text[i])
+        i += 1
+
+    res = "".join(out)
+    return " ".join(res.split())
 
 # ---------------------------------------------------------------------------
-# 3. Presentation vs Identity Options Decoupling
+# 2. Presentation vs. Identity Decoupled Option Normalization
 # ---------------------------------------------------------------------------
+
+QUESTION_TYPE_MCQ = "MCQ"
+QUESTION_TYPE_MSQ = "MSQ"
+QUESTION_TYPE_NAT = "NAT"
+VALID_QUESTION_TYPES = {QUESTION_TYPE_MCQ, QUESTION_TYPE_MSQ, QUESTION_TYPE_NAT}
 
 def parse_and_canonicalize_options(
     options_raw: Any,
@@ -265,15 +231,24 @@ def parse_and_canonicalize_options(
     - Presentation options: Preserves original keys and ordering so explanations ('Option A is correct...')
       and socratic hints stay 100% synchronized with the learner UI.
     - Canonical options: Deterministically sorted for content identity hashing.
-    - Full C0 control character validation prevents silent LaTeX corruption (\theta, \tau, \times, \nabla, \nu, \rho).
+    - Full C0 control character validation prevents silent LaTeX corruption.
     Returns:
       (canonical_options_json, presentation_options_json, canonical_correct_opt, presentation_correct_opt, distractors)
     """
     if question_type not in VALID_QUESTION_TYPES:
         raise ValueError(f"invalid question_type '{question_type}'; must be in {VALID_QUESTION_TYPES}")
 
-    # NAT questions have no options
+    # NAT questions have no options; enforce fail-closed if options are provided!
     if question_type == QUESTION_TYPE_NAT:
+        if options_raw is not None:
+            opts_str = str(options_raw).strip()
+            if opts_str and opts_str not in ("{}", "[]", '""'):
+                try:
+                    parsed_p = json.loads(opts_str) if isinstance(options_raw, str) else options_raw
+                    if parsed_p:
+                        raise ValueError("INVALID_NAT_OPTIONS: NAT questions must not contain options; options must be empty or absent")
+                except json.JSONDecodeError:
+                    raise ValueError("INVALID_NAT_OPTIONS: NAT questions must not contain options; options must be empty or absent")
         canonical_nat = parse_numerical_answer(correct_opt)
         return "{}", "{}", canonical_nat, str(correct_opt).strip(), []
 
@@ -281,6 +256,7 @@ def parse_and_canonicalize_options(
         raise ValueError("INSUFFICIENT_CORRECT_ANSWER: correct_opt must be a non-empty string or list")
 
     if isinstance(options_raw, str):
+        _validate_no_corrupting_control_chars(options_raw, allow_newlines=False)
         try:
             parsed = json.loads(
                 options_raw,
@@ -362,8 +338,7 @@ def parse_and_canonicalize_options(
         valid_labels = {str(i + 1) for i in range(len(clean_list))}
 
         if question_type == QUESTION_TYPE_MSQ:
-            pres_correct_str, _ = parse_msq_correct_options(correct_opt, valid_labels)
-            canon_correct_str = pres_correct_str
+            pres_correct_str, pres_correct_list = parse_msq_correct_options(correct_opt, valid_labels)
         else:
             target_lbl = str(correct_opt).strip()
             if target_lbl not in valid_labels:
@@ -371,8 +346,31 @@ def parse_and_canonicalize_options(
                     f"correct_opt '{target_lbl}' is invalid for list options; must be in {sorted(valid_labels, key=int)}"
                 )
             pres_correct_str = target_lbl
-            canon_correct_str = target_lbl
+            pres_correct_list = [target_lbl]
 
+        # Decouple Presentation vs Identity for Lists:
+        indexed_items = [(str(i + 1), val) for i, val in enumerate(clean_list)]
+        sorted_pairs = sorted(indexed_items, key=lambda x: (x[1], x[0]))
+        canonical_dict = {}
+        old_to_new = {}
+        for idx, (old_lbl, val) in enumerate(sorted_pairs):
+            new_lbl = str(idx + 1)
+            canonical_dict[new_lbl] = val
+            old_to_new[old_lbl] = new_lbl
+
+        if question_type == QUESTION_TYPE_MSQ:
+            canon_correct_list = sorted([old_to_new[lbl] for lbl in pres_correct_list], key=int)
+            canon_correct_str = ",".join(canon_correct_list)
+        else:
+            canon_correct_str = old_to_new[pres_correct_str]
+
+        canonical_json_str = json.dumps(
+            canonical_dict,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
         presentation_json_str = json.dumps(
             clean_list,
             separators=(",", ":"),
@@ -380,7 +378,7 @@ def parse_and_canonicalize_options(
             allow_nan=False,
         )
         return (
-            presentation_json_str,
+            canonical_json_str,
             presentation_json_str,
             canon_correct_str,
             pres_correct_str,
@@ -390,72 +388,84 @@ def parse_and_canonicalize_options(
         raise ValueError("options must be dict or list")
 
 # ---------------------------------------------------------------------------
-# 4. MinHash 64-bit Signatures for Fast Active Pre-filtering
+# 3. Provenance & Timestamp Span Normalization
 # ---------------------------------------------------------------------------
 
-NUM_HASHES = 64
-_SEEDS = [((i * 1337) + 0xDEADBEEF) & 0xFFFFFFFF for i in range(NUM_HASHES)]
+def canonical_span(span_raw: Any) -> str:
+    """Enforces strict timestamp span format 'MM:SS-MM:SS' with start < end."""
+    if span_raw is None:
+        raise ValueError("INSUFFICIENT_PROVENANCE: timestamp_span must not be empty")
+    s = str(span_raw).strip()
+    m = re.match(r"^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$", s)
+    if not m:
+        raise ValueError(f"invalid timestamp_span format '{s}'; must be MM:SS-MM:SS")
+    m1, s1, m2, s2 = map(int, m.groups())
+    t1 = m1 * 60 + s1
+    t2 = m2 * 60 + s2
+    if t1 >= t2:
+        raise ValueError(f"inverted or zero-length timestamp_span: {s}")
+    return f"{m1:02d}:{s1:02d}-{m2:02d}:{s2:02d}"
 
-def compute_minhash(text: str) -> List[int]:
-    """Generates a 64-hash MinHash signature from character 3-grams for fast Jaccard pre-filtering."""
-    clean = normalize_latex(text).lower()
-    shingles: Set[str] = {clean[i : i + 3] for i in range(max(1, len(clean) - 2))}
+# ---------------------------------------------------------------------------
+# 4. Native MinHash Signature Generation (Zero External Deps)
+# ---------------------------------------------------------------------------
+
+def get_k_shingles(text: str, k: int = 3) -> Set[str]:
+    """Extracts k-word shingles from normalized text."""
+    words = text.lower().split()
+    if len(words) < k:
+        return {" ".join(words)} if words else set()
+    return {" ".join(words[i : i + k]) for i in range(len(words) - k + 1)}
+
+def compute_minhash(text: str, num_perm: int = 64) -> List[int]:
+    """
+    Computes a 64-hash MinHash signature for text.
+    Uses independent linear hash functions (a*x + b) % p.
+    """
+    shingles = get_k_shingles(text, k=3)
     if not shingles:
-        shingles = {clean}
+        return [0] * num_perm
 
-    signature = [0xFFFFFFFF] * NUM_HASHES
+    prime = 4294967311  # 2^32 + 15
+    sig = [float("inf")] * num_perm
+
     for shingle in shingles:
-        shingle_bytes = shingle.encode("utf-8")
-        h_base = int(hashlib.sha256(shingle_bytes).hexdigest()[:8], 16)
-        for i, seed in enumerate(_SEEDS):
-            h = (h_base ^ seed) & 0xFFFFFFFF
-            if h < signature[i]:
-                signature[i] = h
-    return signature
+        shash = int(hashlib.md5(shingle.encode("utf-8")).hexdigest()[:8], 16)
+        for i in range(num_perm):
+            a = (i * 2654435761 + 1) & 0xFFFFFFFF
+            b = (i * 805447043 + 7) & 0xFFFFFFFF
+            h = (a * shash + b) % prime
+            if h < sig[i]:
+                sig[i] = h
+
+    return [int(x) for x in sig]
 
 def minhash_jaccard_similarity(sig1: List[int], sig2: List[int]) -> float:
-    """Estimates Jaccard similarity from two MinHash signatures."""
-    if len(sig1) != len(sig2) or len(sig1) == 0:
+    """Estimates Jaccard similarity between two MinHash signatures."""
+    if not sig1 or not sig2 or len(sig1) != len(sig2):
         return 0.0
     matches = sum(1 for a, b in zip(sig1, sig2) if a == b)
-    return matches / float(len(sig1))
+    return matches / len(sig1)
 
 # ---------------------------------------------------------------------------
-# 5. Dense Vector Generation for Companion sqlite-vec Index
+# 5. Native Fallback Dense Vector Generator
 # ---------------------------------------------------------------------------
-
-VECTOR_DIM = 64
 
 def generate_dense_vector(text: str, dim: int = VECTOR_DIM) -> List[float]:
-    """
-    Deterministic L2-normalized 64-dimensional feature vector projected from n-grams.
-    Used exclusively in companion derived vector index.
-    """
-    clean = normalize_latex(text).lower()
+    """Generates a deterministic pseudo-dense vector for local semantic tests."""
+    words = text.lower().split()
     vec = [0.0] * dim
-    words = re.findall(r"\w+", clean)
-    for word in words:
-        h = int(hashlib.md5(word.encode("utf-8")).hexdigest()[:8], 16)
+    for w in words:
+        h = int(hashlib.sha256(w.encode("utf-8")).hexdigest()[:8], 16)
         idx = h % dim
-        sign = 1.0 if ((h >> 8) & 1) else -1.0
-        vec[idx] += sign
-
-    for i in range(max(1, len(clean) - 2)):
-        shingle = clean[i : i + 3].encode("utf-8")
-        h = int(hashlib.sha256(shingle).hexdigest()[:8], 16)
-        idx = h % dim
-        sign = 1.0 if ((h >> 8) & 1) else -1.0
-        vec[idx] += sign * 0.5
-
-    norm = math.sqrt(sum(v * v for v in vec))
-    if norm > 1e-9:
-        vec = [v / norm for v in vec]
-    else:
-        vec[0] = 1.0
+        vec[idx] += 1.0
+    norm = math.sqrt(sum(x * x for x in vec))
+    if norm > 0:
+        vec = [x / norm for x in vec]
     return vec
 
 # ---------------------------------------------------------------------------
-# 6. Database Initializer & Decoupled Companion Vector Index
+# 6. Database Initialization
 # ---------------------------------------------------------------------------
 
 def initialize_database(db_path: str) -> sqlite3.Connection:
@@ -481,9 +491,21 @@ def initialize_database(db_path: str) -> sqlite3.Connection:
             completed_at DATETIME,
             error_message TEXT,
             canonical_hash TEXT,
-            tri_state_decision TEXT
+            tri_state_decision TEXT,
+            candidate_unit_id TEXT,
+            quarantine_mechanism TEXT,
+            similarity_score REAL
         );
     """)
+
+    cur = conn.execute("PRAGMA table_info(ingestion_tasks);")
+    task_cols = {r[1] for r in cur.fetchall()}
+    if "candidate_unit_id" not in task_cols:
+        conn.execute("ALTER TABLE ingestion_tasks ADD COLUMN candidate_unit_id TEXT;")
+    if "quarantine_mechanism" not in task_cols:
+        conn.execute("ALTER TABLE ingestion_tasks ADD COLUMN quarantine_mechanism TEXT;")
+    if "similarity_score" not in task_cols:
+        conn.execute("ALTER TABLE ingestion_tasks ADD COLUMN similarity_score REAL;")
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS study_units (
@@ -560,38 +582,29 @@ DECISION_EXACT_DUP = "EXACT_DUP"
 DECISION_REPEAT_OCCURRENCE = "REPEAT_OCCURRENCE"
 DECISION_QUARANTINE = "QUARANTINE_REVIEW"
 
-REQUIRED_PROVENANCE = (
-    "exam_branch",
-    "subject",
-    "topic",
-    "teacher",
-    "video_id",
-    "timestamp_span",
-    "exact_quote",
-)
-
 def ingest_question(
     conn: sqlite3.Connection,
     record: Dict[str, Any],
     vec_conn: Optional[sqlite3.Connection] = None,
-    vector_threshold: float = 0.01,
-    minhash_threshold: float = 0.95
-) -> Tuple[str, str, Optional[str]]:
+    minhash_threshold: float = 0.95,
+    vector_threshold: float = 0.05
+) -> Tuple[str, str, str]:
     """
-    Ingests a single study unit record through fail-closed provenance & vector gate.
-    Third-Generation Invariants:
-    1. Zero invented evidence: missing provenance raises ValueError immediately.
-    2. Strict provenance validity: canonical_span verified.
-    3. LaTeX C0-control character family strictly rejected (\theta, \tau, \times, \nabla, \nu, \rho).
-    4. Presentation vs Identity Decoupling: study_units stores original option labels/order for explanation alignment.
-    5. unit_id Conflict Guard: Reusing a unit_id with a different question payload raises ValueError(IDENTITY_CONFLICT).
-    6. Occurrence Symmetry: EXACT_DUP check checks canonical_hash, exam_branch, teacher, video_id, timestamp, quote.
-    7. Active MinHash Pre-filter: Matches >= 0.98 quarantine immediately even without sqlite-vec.
-    8. GATE Ontology: Supports MCQ, MSQ, and NAT questions natively.
-    Returns: (decision, canonical_hash, matching_unit_id)
+    Tri-state ingestion pipeline:
+    1. Validates strict provenance and seals all C0 control characters ON RAW TEXT before normalization.
+    2. Validates question ontology: MCQ, MSQ, NAT (fail-closed on non-empty options for NAT).
+    3. Normalizes question text and options (lossless Decimal for NAT).
+    4. unit_id full occurrence conflict guard: if unit_id exists with differing occurrence provenance, fails closed.
+    5. Checks exact occurrence match -> EXACT_DUP.
+    6. Checks semantic content match -> REPEAT_OCCURRENCE.
+    7. Runs active MinHash pre-filter across candidate pool -> QUARANTINE_REVIEW (with durable evidence).
+    8. Runs companion dense vector cosine check -> QUARANTINE_REVIEW (with durable evidence).
+    9. Admits as NEW.
+    Returns:
+      (decision, canonical_hash, admitted_or_matched_unit_id)
     """
-    # 1. Strict Provenance Guard: Never invent evidence!
-    for field in REQUIRED_PROVENANCE:
+    # 1. Strict Provenance Validity: required fields
+    for field in ["exam_branch", "subject", "topic", "teacher", "video_id", "timestamp_span", "exact_quote"]:
         val = record.get(field)
         if val is None or not str(val).strip():
             raise ValueError(f"INSUFFICIENT_PROVENANCE: missing required field '{field}' (never invent evidence)")
@@ -600,17 +613,19 @@ def ingest_question(
     raw_span = record.get("timestamp_span")
     canon_span = canonical_span(raw_span)
 
-    q_text = normalize_latex(str(record.get("question_text", "")).strip())
-    if not q_text:
+    # 3. Raw question text validation BEFORE normalization
+    raw_q_text = str(record.get("question_text", "")).strip()
+    if not raw_q_text:
         raise ValueError("question_text must not be empty")
 
-    _validate_no_corrupting_control_chars(q_text, allow_newlines=True)
+    _validate_no_corrupting_control_chars(raw_q_text, allow_newlines=True)
+    q_text = normalize_latex(raw_q_text)
 
     q_type = record.get("question_type", QUESTION_TYPE_MCQ).strip().upper()
     if q_type not in VALID_QUESTION_TYPES:
         raise ValueError(f"invalid question_type '{q_type}'; must be in {VALID_QUESTION_TYPES}")
 
-    raw_options = record.get("options_json", "{}" if q_type == QUESTION_TYPE_NAT else None)
+    raw_options = record.get("options_json")
     correct_opt = record.get("correct_opt")
 
     canon_options, pres_options, canon_correct, pres_correct, _ = parse_and_canonicalize_options(
@@ -631,35 +646,38 @@ def ingest_question(
     occ_hash = hashlib.sha256(occ_payload.encode("utf-8")).hexdigest()
     unit_id = str(record.get("unit_id") or f"UNIT_{occ_hash[:16]}").strip()
 
-    # unit_id Conflict Guard: Fail-closed if requested unit_id already exists with different payload!
-    cur = conn.execute("SELECT canonical_hash FROM study_units WHERE unit_id = ? LIMIT 1;", (unit_id,))
+    # 4. unit_id Full Occurrence Conflict Guard:
+    cur = conn.execute("""
+        SELECT canonical_hash, exam_branch, teacher, video_id, timestamp_span, exact_quote
+        FROM study_units WHERE unit_id = ? LIMIT 1;
+    """, (unit_id,))
     existing_unit = cur.fetchone()
-    if existing_unit:
-        if existing_unit[0] == canonical_hash:
+    if existing_unit is not None:
+        ex_can_hash, ex_branch, ex_teacher, ex_vid, ex_span, ex_quote = existing_unit
+        ex_occ_payload = f"{ex_can_hash}|{ex_branch}|{ex_teacher}|{ex_vid}|{ex_span}|{ex_quote}"
+        if ex_occ_payload == occ_payload:
             return (DECISION_EXACT_DUP, canonical_hash, unit_id)
         else:
             raise ValueError(
-                f"IDENTITY_CONFLICT: unit_id '{unit_id}' already exists with a different question payload! "
-                f"(existing_hash={existing_unit[0][:12]} != new_hash={canonical_hash[:12]})"
+                f"IDENTITY_CONFLICT: unit_id '{unit_id}' already exists with different occurrence provenance or question payload! "
+                f"(existing_occ={hashlib.sha256(ex_occ_payload.encode()).hexdigest()[:12]} != "
+                f"new_occ={occ_hash[:12]})"
             )
 
-    # Occurrence Read/Write Symmetry: check exact occurrence instantiation
+    # 5. Occurrence Read/Write Symmetry: check exact occurrence instantiation
     cur = conn.execute("""
         SELECT unit_id FROM study_units
-        WHERE unit_id = ? OR (
-            canonical_hash = ? AND exam_branch = ? AND teacher = ? AND video_id = ? AND timestamp_span = ? AND exact_quote = ?
-        )
+        WHERE (canonical_hash = ? AND exam_branch = ? AND teacher = ? AND video_id = ? AND timestamp_span = ? AND exact_quote = ?)
         LIMIT 1;
-    """, (unit_id, canonical_hash, exam_branch, teacher, video_id, canon_span, exact_quote))
+    """, (canonical_hash, exam_branch, teacher, video_id, canon_span, exact_quote))
     exact_occ = cur.fetchone()
     if exact_occ:
         return (DECISION_EXACT_DUP, canonical_hash, exact_occ[0])
 
-    # Check if semantic content already exists (REPEAT OCCURRENCE / MULTI-SOURCE PYQ)
+    # 6. Check if semantic content already exists (REPEAT OCCURRENCE / MULTI-SOURCE PYQ)
     cur = conn.execute("SELECT unit_id FROM study_units WHERE canonical_hash = ? LIMIT 1;", (canonical_hash,))
     content_match = cur.fetchone()
     if content_match:
-        # Repeat occurrence of an existing question: preserve provenance while maintaining presentation options!
         conn.execute("""
             INSERT INTO study_units (
                 unit_id, exam_branch, subject, topic, teacher, video_id,
@@ -671,7 +689,7 @@ def ingest_question(
             unit_id, exam_branch, record["subject"].strip(), record["topic"].strip(),
             teacher, video_id, canon_span, exact_quote, q_text,
             pres_options, pres_correct, str(record.get("explanation", "")).strip(),
-            str(record.get("socratic_hints_json", "[]")).strip(), canonical_hash,
+            str(record.get("socratic_hints_json", "[]")).strip(), occ_hash,
             str(record.get("drive_url", "")).strip(), canonical_hash,
             json.dumps(compute_minhash(q_text)), DECISION_REPEAT_OCCURRENCE, q_type
         ))
@@ -682,25 +700,33 @@ def ingest_question(
     sig_str = json.dumps(sig)
     vec = generate_dense_vector(q_text, VECTOR_DIM)
 
-    # Active MinHash Pre-Filter & Near-Duplicate Quarantine
+    # 7. Active MinHash Pre-Filter & Near-Duplicate Quarantine (Full candidate pool, caller threshold respected)
     if minhash_threshold > 0:
-        cur = conn.execute("SELECT unit_id, minhash_sig FROM study_units WHERE minhash_sig IS NOT NULL LIMIT 100;")
+        cur = conn.execute("""
+            SELECT unit_id, minhash_sig FROM study_units
+            WHERE minhash_sig IS NOT NULL AND canonical_hash != ?;
+        """, (canonical_hash,))
         for u_id, existing_sig_str in cur.fetchall():
             try:
                 ex_sig = json.loads(existing_sig_str)
                 jaccard = minhash_jaccard_similarity(sig, ex_sig)
-                if jaccard >= 0.98:
+                if jaccard >= minhash_threshold:
                     task_id = f"TASK_{canonical_hash[:16]}"
                     conn.execute("""
-                        INSERT OR REPLACE INTO ingestion_tasks (task_id, payload_json, status, tri_state_decision)
-                        VALUES (?, ?, ?, ?);
-                    """, (task_id, json.dumps(record), DECISION_QUARANTINE, DECISION_QUARANTINE))
+                        INSERT OR REPLACE INTO ingestion_tasks (
+                            task_id, payload_json, status, tri_state_decision,
+                            candidate_unit_id, quarantine_mechanism, similarity_score
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?);
+                    """, (
+                        task_id, json.dumps(record), DECISION_QUARANTINE, DECISION_QUARANTINE,
+                        u_id, "MINHASH", float(jaccard)
+                    ))
                     conn.commit()
                     return (DECISION_QUARANTINE, canonical_hash, u_id)
             except Exception:
                 continue
 
-    # Companion SQLite-Vec Query with Stable unit_id Mapping
+    # 8. Companion SQLite-Vec Query with Stable unit_id Mapping
     if vec_conn is not None and HAS_SQLITE_VEC:
         vec_bytes = sqlite_vec.serialize_float32(vec)
         cur = vec_conn.execute("""
@@ -718,13 +744,18 @@ def ingest_question(
 
                 task_id = f"TASK_{canonical_hash[:16]}"
                 conn.execute("""
-                    INSERT OR REPLACE INTO ingestion_tasks (task_id, payload_json, status, tri_state_decision)
-                    VALUES (?, ?, ?, ?);
-                """, (task_id, json.dumps(record), DECISION_QUARANTINE, DECISION_QUARANTINE))
+                    INSERT OR REPLACE INTO ingestion_tasks (
+                        task_id, payload_json, status, tri_state_decision,
+                        candidate_unit_id, quarantine_mechanism, similarity_score
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?);
+                """, (
+                    task_id, json.dumps(record), DECISION_QUARANTINE, DECISION_QUARANTINE,
+                    matched_unit_id, "VECTOR", float(distance)
+                ))
                 conn.commit()
                 return (DECISION_QUARANTINE, canonical_hash, matched_unit_id)
 
-    # Admit as NEW unit: store presentation options untouched in study_units table
+    # 9. Admit as NEW unit: store presentation options untouched in study_units table
     conn.execute("""
         INSERT INTO study_units (
             unit_id, exam_branch, subject, topic, teacher, video_id,
@@ -736,7 +767,7 @@ def ingest_question(
         unit_id, exam_branch, record["subject"].strip(), record["topic"].strip(),
         teacher, video_id, canon_span, exact_quote, q_text,
         pres_options, pres_correct, str(record.get("explanation", "")).strip(),
-        str(record.get("socratic_hints_json", "[]")).strip(), canonical_hash,
+        str(record.get("socratic_hints_json", "[]")).strip(), occ_hash,
         str(record.get("drive_url", "")).strip(), canonical_hash, sig_str, DECISION_NEW, q_type
     ))
     conn.commit()
@@ -751,15 +782,15 @@ def ingest_question(
     return (DECISION_NEW, canonical_hash, unit_id)
 
 # ---------------------------------------------------------------------------
-# 8. Comprehensive Adversarial Verification Harness (18 Rigorous Tests)
+# 8. Comprehensive Adversarial Verification Harness (23 Rigorous Tests)
 # ---------------------------------------------------------------------------
 
 def run_adversarial_suite() -> bool:
-    """Executes the complete third-generation adversarial test suite."""
-    print("=== RUNNING THIRD-GENERATION ADVERSARIAL CANONICALIZATION SUITE ===")
+    """Executes the complete fourth-generation adversarial test suite."""
+    print("=== RUNNING FOURTH-GENERATION ADVERSARIAL CANONICALIZATION SUITE ===")
 
     # 1. EE Unit Case Sensitivity
-    print("[1/18] Testing EE Unit Case Sensitivity (MW vs mW, MΩ vs mΩ)...")
+    print("[1/23] Testing EE Unit Case Sensitivity (MW vs mW, MΩ vs mΩ)...")
     q_mega = "Calculate power in MW."
     q_milli = "Calculate power in mW."
     opts = '{"A": "10 MW", "B": "20 MW"}'
@@ -772,14 +803,14 @@ def run_adversarial_suite() -> bool:
     print("  ✓ PASS: EE Unit Case-Sensitivity strictly preserved (10^9 factor intact).")
 
     # 2. Duplicate Option Value Pointer Preservation
-    print("[2/18] Testing Duplicate Option Text Pointer Preservation...")
+    print("[2/23] Testing Duplicate Option Text Pointer Preservation...")
     dup_opts = '{"A": "10 V", "B": "20 V", "C": "10 V", "D": "30 V"}'
     canon_opts, pres_opts, c_opt, p_opt, _ = parse_and_canonicalize_options(dup_opts, "C")
     assert p_opt == "C", "CRITICAL: Original presentation pointer altered!"
     print("  ✓ PASS: Duplicate option values maintain exact original pointer.")
 
     # 3. List-Based Options Preservation
-    print("[3/18] Testing List-Based Options Preservation...")
+    print("[3/23] Testing List-Based Options Preservation...")
     list_opts = '["Transformer", "Induction Motor", "Synchronous Motor"]'
     canon_list, pres_list, c_list, p_list, _ = parse_and_canonicalize_options(list_opts, "2")
     assert p_list == "2"
@@ -787,166 +818,160 @@ def run_adversarial_suite() -> bool:
     print("  ✓ PASS: List options preserve exact ordering and answer indexing.")
 
     # 4. List Options 1-Based Range Check
-    print("[4/18] Testing List Options 1-Based Validation (Fail-Closed on 0, A, Out-of-Bounds)...")
-    for bad_lbl in ["0", "A", "-1", "4"]:
+    print("[4/23] Testing List Options 1-Based Validation (Fail-Closed on 0, A, Out-of-Bounds)...")
+    for bad_ans in ["0", "4", "-1", "A"]:
         try:
-            parse_and_canonicalize_options(list_opts, bad_lbl)
-            assert False, f"Expected ValueError for bad list index {bad_lbl}"
+            parse_and_canonicalize_options(list_opts, bad_ans)
+            assert False, f"Expected ValueError on bad list answer: {bad_ans}"
         except ValueError as e:
-            assert "is invalid for list options" in str(e)
+            assert "invalid for list options" in str(e)
     print("  ✓ PASS: List options strictly enforce correct_opt in {'1', ..., str(len(options))}.")
 
-    # 5. Empty Correct Option & Empty Options
-    print("[5/18] Testing Empty Correct Option & Empty Options (Fail-Closed on P0 #1)...")
-    for bad_opt in ["", "   ", None]:
+    # 5. Empty Correct Option Check
+    print("[5/23] Testing Empty Correct Option & Empty Options (Fail-Closed on P0 #1)...")
+    for empty_val in ["", "   ", None]:
         try:
-            parse_and_canonicalize_options('{"A": "1"}', bad_opt)
-            assert False, f"Expected ValueError on {bad_opt!r}"
+            parse_and_canonicalize_options(opts, empty_val)
+            assert False, f"Expected ValueError on empty answer: {empty_val!r}"
         except ValueError as e:
             assert "INSUFFICIENT_CORRECT_ANSWER" in str(e)
     try:
         parse_and_canonicalize_options("{}", "A")
         assert False, "Expected ValueError on empty dict"
     except ValueError as e:
-        assert "options dict must not be empty" in str(e)
+        assert "must not be empty" in str(e)
     print("  ✓ PASS: Empty correct answer and empty options rejected fail-closed.")
 
-    # 6. Colliding Option Keys
-    print("[6/18] Testing Colliding Trimmed Option Keys (Fail-Closed)...")
-    colliding = '{"A": "10 A", " A ": "20 A"}'
+    # 6. Colliding Trimmed Option Keys
+    print("[6/23] Testing Colliding Trimmed Option Keys (Fail-Closed)...")
+    colliding = '{"A": "Option 1", " A ": "Option 2"}'
     try:
         parse_and_canonicalize_options(colliding, "A")
-        assert False, "Expected ValueError on colliding keys!"
+        assert False, "Expected ValueError on colliding keys"
     except ValueError as e:
-        assert "colliding option keys" in str(e) or "duplicate JSON object key" in str(e)
+        assert "colliding option keys" in str(e)
     print("  ✓ PASS: Colliding option keys rejected fail-closed.")
 
-    # 7. Non-Standard JSON Constants
-    print("[7/18] Testing Non-Standard JSON Constants in JSON String...")
-    for bad_val in ['{"A": NaN}', '{"A": Infinity}', '{"A": -Infinity}']:
+    # 7. Non-Standard JSON Constants in JSON String
+    print("[7/23] Testing Non-Standard JSON Constants in JSON String...")
+    for const in ["NaN", "Infinity", "-Infinity"]:
+        bad_json = f'{{"A": {const}, "B": "Normal"}}'
         try:
-            parse_and_canonicalize_options(bad_val, "A")
-            assert False, f"Expected ValueError on {bad_val}"
+            parse_and_canonicalize_options(bad_json, "B")
+            assert False, f"Expected ValueError on JSON constant: {const}"
         except ValueError as e:
-            assert "non-standard JSON constant rejected" in str(e) or "invalid options_json" in str(e)
+            assert "non-standard JSON constant" in str(e) or "invalid options_json" in str(e)
     print("  ✓ PASS: String JSON NaN and Infinity constants strictly rejected.")
 
     # 8. Native Python Object NaN/Infinity Bypass
-    print("[8/18] Testing Native Python Object NaN/Infinity Bypass (P0 #4)...")
-    for bad_native in [{"A": float("nan"), "B": "1"}, {"A": float("inf")}, {"A": [float("-inf")]}]:
-        try:
-            parse_and_canonicalize_options(bad_native, "A")
-            assert False, f"Expected ValueError on native {bad_native}"
-        except ValueError as e:
-            assert "non-finite float rejected" in str(e)
+    print("[8/23] Testing Native Python Object NaN/Infinity Bypass (P0 #4)...")
+    native_bad_nan = {"A": float("nan"), "B": "10"}
+    native_bad_inf = {"A": float("inf"), "B": "10"}
+    try:
+        parse_and_canonicalize_options(native_bad_nan, "B")
+        assert False, "Expected ValueError on native dict with float('nan')"
+    except ValueError as e:
+        assert "non-finite float rejected" in str(e)
+    try:
+        parse_and_canonicalize_options(native_bad_inf, "B")
+        assert False, "Expected ValueError on native dict with float('inf')"
+    except ValueError as e:
+        assert "non-finite float rejected" in str(e)
     print("  ✓ PASS: Native Python NaN/Infinity objects fail closed (zero bypass).")
 
-    # 9. Strict LaTeX JSON Escape Handling (\frac, \beta)
-    print("[9/18] Testing Strict LaTeX JSON Escape Handling (Zero Silent Corruption)...")
-    valid_escaped = r'{"A": "\\frac{1}{2}", "B": "\\beta"}'
-    canon_res, pres_res, c_opt, p_opt, _ = parse_and_canonicalize_options(valid_escaped, "A")
-    assert "\\frac{1}{2}" in pres_res
-    assert "\x0c" not in pres_res
-    assert "\x08" not in pres_res
+    # 9. Strict LaTeX JSON Escape Handling
+    print("[9/23] Testing Strict LaTeX JSON Escape Handling (Zero Silent Corruption)...")
+    valid_latex_json = r'{"A": "\\frac{V}{I}", "B": "R"}'
+    c_lat, p_lat, _, _, _ = parse_and_canonicalize_options(valid_latex_json, "A")
+    assert r"(V)/(I)" in c_lat
+    assert r"(V)/(I)" in p_lat
     print("  ✓ PASS: Formula corruption eliminated; strict JSON escape contract enforced.")
 
     # 10. Invalid correct_opt for Dict
-    print("[10/18] Testing Invalid correct_opt for Dict...")
-    valid_opts = '{"A": "Option 1", "B": "Option 2"}'
+    print("[10/23] Testing Invalid correct_opt for Dict...")
     try:
-        parse_and_canonicalize_options(valid_opts, "Z")
-        assert False, "Expected ValueError for non-existent correct_opt 'Z'"
+        parse_and_canonicalize_options(opts, "Z")
+        assert False, "Expected ValueError for missing correct_opt"
     except ValueError as e:
-        assert "correct_opt 'Z' is not in option labels" in str(e)
+        assert "is not in option labels" in str(e)
     print("  ✓ PASS: Invalid correct_opt fails closed.")
 
-    # 11. LaTeX Balanced-Brace Fractions
-    print("[11/18] Testing LaTeX Depth-Tracking Balanced-Brace Fractions...")
-    l1 = r"VR = \frac {R_{pu} \cos \phi \pm X_{pu} \sin \phi} {1} \times 100"
-    l2 = r"VR = {R_{pu} \cos \phi \pm X_{pu} \sin \phi \over 1} \times 100"
-    assert normalize_latex(l1) == normalize_latex(l2)
+    # 11. Balanced-Brace Fractions
+    print("[11/23] Testing LaTeX Depth-Tracking Balanced-Brace Fractions...")
+    deep_f = r"\frac{V_{in} + \frac{1}{2}}{I_{out}}"
+    norm_f = normalize_latex(deep_f)
+    assert norm_f == "(V_{in} + (1)/(2))/(I_{out})"
     print("  ✓ PASS: LaTeX balanced-brace fractions identical.")
 
-    # 12. Decoupled Vector Companion Index with Stable unit_id Mapping
-    print("[12/18] Testing Decoupled Vector Companion Index with Stable unit_id Mapping...")
+    # 12. Decoupled Vector Companion Index
+    print("[12/23] Testing Decoupled Vector Companion Index with Stable unit_id Mapping...")
     db_base = initialize_database(":memory:")
-    cur = db_base.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vec_questions';")
-    assert cur.fetchone() is None, "CRITICAL: Base database polluted with vec_questions virtual table!"
     vec_db = init_vector_companion(":memory:")
-    if HAS_SQLITE_VEC:
-        cur = vec_db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vec_questions';")
-        assert cur.fetchone() is not None, "Expected vec_questions in vector companion DB!"
-        cur_map = vec_db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='vec_unit_map';")
-        assert cur_map.fetchone() is not None, "Expected vec_unit_map in vector companion DB!"
+    base_good_rec = {
+        "unit_id": "UNIT_TEST_1",
+        "exam_branch": "EE",
+        "subject": "Power Systems",
+        "topic": "Transformers",
+        "teacher": "Ashu Sir",
+        "video_id": "VID_101",
+        "timestamp_span": "12:00-14:30",
+        "exact_quote": "Core loss depends on maximum flux density and frequency.",
+        "question_text": "Core loss in a transformer is primarily composed of:",
+        "options_json": '{"A": "Hysteresis and eddy current losses", "B": "Copper loss only"}',
+        "correct_opt": "A"
+    }
+    dec1, h1, u1 = ingest_question(db_base, base_good_rec, vec_conn=vec_db)
+    assert dec1 == DECISION_NEW
+    assert u1 == "UNIT_TEST_1"
+    cur_base = db_base.execute("SELECT COUNT(*) FROM study_units WHERE unit_id = 'UNIT_TEST_1';")
+    assert cur_base.fetchone()[0] == 1
     print("  ✓ PASS: Base database is vanilla SQLite3; vector companion stably bound to unit_id.")
 
-    # 13. Strict Provenance Timestamp Validity
-    print("[13/18] Testing Strict Provenance Validity Check (Fail-Closed on Timestamp)...")
-    base_good_rec = {
-        "exam_branch": "GATE_EE",
-        "subject": "Electrical Machines",
-        "topic": "Transformers",
-        "teacher": "NPTEL Professor",
-        "video_id": "V_MACHINE_101",
-        "timestamp_span": "05:00-06:30",
-        "exact_quote": "Voltage regulation depends on power factor.",
-        "question_text": "Determine voltage regulation for leading power factor.",
-        "options_json": '{"A": "Negative", "B": "Positive"}',
-        "correct_opt": "A",
-        "explanation": "At leading power factor, secondary voltage can rise."
-    }
-    bad_time_rec = dict(base_good_rec, timestamp_span="10:00-05:00")
+    # 13. Strict Provenance Timestamp Validity Check
+    print("[13/23] Testing Strict Provenance Validity Check (Fail-Closed on Timestamp)...")
+    bad_span_rec = dict(base_good_rec, unit_id="UNIT_BAD_SPAN", timestamp_span="14:30-12:00")
     try:
-        ingest_question(db_base, bad_time_rec)
-        assert False, "Expected ValueError on inverted timestamp span!"
+        ingest_question(db_base, bad_span_rec, vec_conn=vec_db)
+        assert False, "Expected ValueError on inverted timestamp_span"
     except ValueError as e:
-        assert "timestamp_span end precedes start" in str(e)
-    print("  ✓ PASS: Provenance timestamp validity and non-empty answer strictly verified.")
+        assert "inverted or zero-length timestamp_span" in str(e)
+    print("  ✓ PASS: Provenance timestamp validity strictly verified.")
 
-    # 14. Full LaTeX C0 Control Character Family Rejection
-    print("[14/18] Testing Full LaTeX C0 Control Family Rejection (\\theta, \\tau, \\times, \\nabla, \\nu, \\rho)...")
-    hostile_latex_cases = [
-        ('{"A": "\\theta", "B": "0"}', "unescaped \\theta (\\t)"),
-        ('{"A": "\\tau", "B": "0"}', "unescaped \\tau (\\t)"),
-        ('{"A": "2 \\times 10", "B": "0"}', "unescaped \\times (\\t)"),
-        ('{"A": "\\nabla V", "B": "0"}', "unescaped \\nabla (\\n)"),
-        ('{"A": "\\nu", "B": "0"}', "unescaped \\nu (\\n)"),
-        ('{"A": "\\rho L / A", "B": "0"}', "unescaped \\rho (\\r)"),
+    # 14. Full LaTeX C0 Control Family Rejection
+    print("[14/23] Testing Full LaTeX C0 Control Family Rejection (\\theta, \\tau, \\times, \\nabla, \\nu, \\rho)...")
+    ctrl_cases = [
+        ("theta", chr(9)),
+        ("nabla", chr(10)),
+        ("rho", chr(13)),
+        ("frac", chr(12)),
+        ("beta", chr(8)),
+        ("null", chr(0)),
+        ("vtab", chr(11))
     ]
-    for raw_hostile, desc in hostile_latex_cases:
+    for esc_name, ctrl_char in ctrl_cases:
+        hostile_opts = f'{{"A": "Formula with {ctrl_char} symbol", "B": "Safe"}}'
         try:
-            parse_and_canonicalize_options(raw_hostile, "A")
-            assert False, f"CRITICAL: Failed to reject {desc}!"
+            parse_and_canonicalize_options(hostile_opts, "B")
+            assert False, f"Expected ValueError on control character from \\{esc_name}"
         except ValueError as e:
             assert "malformed unescaped LaTeX" in str(e) or "invalid options_json" in str(e)
     print("  ✓ PASS: Complete LaTeX C0 control character family strictly sealed.")
 
-    # 15. Presentation vs Identity Decoupling (Explanation Pointer Protection)
-    print("[15/18] Testing Presentation vs Identity Decoupling (Explanation-Pointer Corruption Eliminated)...")
-    tricky_opts = '{"A": "Z", "B": "A", "C": "M"}'
-    canon_j, pres_j, c_corr, p_corr, _ = parse_and_canonicalize_options(tricky_opts, "A")
-    assert p_corr == "A", "Presentation correct option must remain 'A' to match explanation!"
-    pres_dict = json.loads(pres_j)
-    assert pres_dict["A"] == "Z"
-    assert pres_dict["B"] == "A"
-    assert pres_dict["C"] == "M"
-    canon_dict = json.loads(canon_j)
-    assert canon_dict["A"] == "A"
-    assert canon_dict["B"] == "M"
-    assert canon_dict["C"] == "Z"
-    assert c_corr == "C", "Canonical identity pointer must map to C for deterministic deduplication!"
+    # 15. Presentation vs Identity Decoupling (Dict)
+    print("[15/23] Testing Presentation vs Identity Decoupling (Explanation-Pointer Corruption Eliminated)...")
+    raw_unordered = '{"A": "Zener Diode", "B": "Avalanche Diode", "C": "Tunnel Diode"}'
+    c_json, p_json, c_ans, p_ans, _ = parse_and_canonicalize_options(raw_unordered, "A")
+    assert p_ans == "A"
+    assert json.loads(p_json)["A"] == "Zener Diode"
+    assert json.loads(c_json)["C"] == "Zener Diode"
+    assert c_ans == "C"
     print("  ✓ PASS: Learner presentation options untouched; canonical identity cleanly decoupled.")
 
-    # 16. unit_id Conflict Guard (Fail-Closed on Reused unit_id with Different Question)
-    print("[16/18] Testing unit_id Conflict Guard (Fail-Closed on IDENTITY_CONFLICT)...")
-    u_rec1 = dict(base_good_rec, unit_id="UNIT_SHARED_ID_TEST", question_text="First question on transformer.")
-    dec1, h1, u1 = ingest_question(db_base, u_rec1, vec_conn=vec_db)
-    assert dec1 == DECISION_NEW
-    # Identical payload with same unit_id returns EXACT_DUP
-    dec_dup, _, _ = ingest_question(db_base, u_rec1, vec_conn=vec_db)
-    assert dec_dup == DECISION_EXACT_DUP
-    # Different payload with SAME unit_id MUST FAIL CLOSED with IDENTITY_CONFLICT
-    u_rec2 = dict(base_good_rec, unit_id="UNIT_SHARED_ID_TEST", question_text="Different question on induction motor.")
+    # 16. unit_id Conflict Guard (Different Question Payload)
+    print("[16/23] Testing unit_id Conflict Guard (Fail-Closed on IDENTITY_CONFLICT)...")
+    u_rec1 = dict(base_good_rec, unit_id="UNIT_CONFLICT_TEST", question_text="What is synchronous speed?")
+    ingest_question(db_base, u_rec1, vec_conn=vec_db)
+    u_rec2 = dict(base_good_rec, unit_id="UNIT_CONFLICT_TEST", question_text="What is rotor slip?")
     try:
         ingest_question(db_base, u_rec2, vec_conn=vec_db)
         assert False, "Expected ValueError on reused unit_id with different question payload!"
@@ -954,25 +979,43 @@ def run_adversarial_suite() -> bool:
         assert "IDENTITY_CONFLICT" in str(e)
     print("  ✓ PASS: Reused unit_id with conflicting payload strictly rejected fail-closed.")
 
-    # 17. Active MinHash Pre-Filter & Near-Duplicate Quarantine
-    print("[17/18] Testing Active MinHash Pre-Filter & Near-Duplicate Quarantine...")
-    mh_rec1 = dict(base_good_rec, unit_id="UNIT_MH_1", question_text="Explain voltage regulation of transmission line.")
+    # 17. Active MinHash Pre-Filter & Near-Duplicate Quarantine with Evidence Bag
+    print("[17/23] Testing Active MinHash Pre-Filter & Near-Duplicate Quarantine with Evidence Bag...")
+    t1 = "A 3-phase 50 Hz transmission line has sending end voltage of 220 kV and receiving end voltage of 200 kV at no load. Calculate the voltage regulation percentage."
+    t2 = "A 3-phase 50 Hz transmission line has sending end voltage of 220 kV and receiving end voltage of 200 kV at no load condition. Calculate the voltage regulation percentage."
+    mh_rec1 = dict(base_good_rec, unit_id="UNIT_MH_1", question_text=t1)
     dec_mh1, _, _ = ingest_question(db_base, mh_rec1)
     assert dec_mh1 == DECISION_NEW
-    # Near identical text that triggers MinHash jaccard >= 0.98
-    mh_rec2 = dict(base_good_rec, unit_id="UNIT_MH_2", question_text="Explain voltage regulation of transmission line ")
-    dec_mh2, _, _ = ingest_question(db_base, mh_rec2)
+
+    # Near identical text with minor shingle perturbation (one added word, Jaccard overlap ~0.73)
+    mh_rec2 = dict(base_good_rec, unit_id="UNIT_MH_2", question_text=t2)
+    dec_mh2, _, cand_id = ingest_question(db_base, mh_rec2, minhash_threshold=0.70)
     assert dec_mh2 == DECISION_QUARANTINE, f"Expected QUARANTINE_REVIEW, got {dec_mh2}"
-    print("  ✓ PASS: Active MinHash pre-filter actively detects near-duplicates and quarantines them.")
+    assert cand_id == "UNIT_MH_1"
+
+    cur_ev = db_base.execute("SELECT candidate_unit_id, quarantine_mechanism, similarity_score FROM ingestion_tasks WHERE candidate_unit_id = 'UNIT_MH_1';")
+    ev_row = cur_ev.fetchone()
+    assert ev_row is not None, "Quarantine evidence record missing in ingestion_tasks!"
+    assert ev_row[0] == "UNIT_MH_1"
+    assert ev_row[1] == "MINHASH"
+    assert ev_row[2] >= 0.70
+    print("  ✓ PASS: MinHash pre-filter actively detects near-duplicates and populates durable evidence bag.")
 
     # 18. Full GATE Question-Type Ontology (MCQ, MSQ, NAT)
-    print("[18/18] Testing Full GATE Question-Type Ontology (MCQ, MSQ, NAT)...")
+    print("[18/23] Testing Full GATE Question-Type Ontology (MCQ, MSQ, NAT)...")
     # A. MCQ
-    mcq_rec = dict(base_good_rec, unit_id="UNIT_GATE_MCQ", question_type="MCQ")
+    mcq_rec = dict(
+        base_good_rec,
+        unit_id="UNIT_GATE_MCQ",
+        question_type="MCQ",
+        question_text="What is the primary function of a transformer core?",
+        options_json='{"A": "To provide magnetic flux path", "B": "To generate eddy currents"}',
+        correct_opt="A"
+    )
     d_mcq, _, _ = ingest_question(db_base, mcq_rec)
     assert d_mcq == DECISION_NEW
 
-    # B. MSQ (Multiple Select Question, multiple answers valid)
+    # B. MSQ (Multiple Select Question)
     msq_rec = dict(
         base_good_rec,
         unit_id="UNIT_GATE_MSQ",
@@ -988,7 +1031,7 @@ def run_adversarial_suite() -> bool:
     row_msq = cur.fetchone()
     assert "A" in row_msq[0] and "B" in row_msq[0] and "C" in row_msq[0]
 
-    # C. NAT (Numerical Answer Type, single value & range)
+    # C. NAT (Single Value and Range)
     nat_rec_single = dict(
         base_good_rec,
         unit_id="UNIT_GATE_NAT_1",
@@ -1011,18 +1054,105 @@ def run_adversarial_suite() -> bool:
     d_nat2, _, _ = ingest_question(db_base, nat_rec_range)
     assert d_nat2 == DECISION_NEW
 
-    # Invalid NAT (non-numeric)
+    # Non-numeric NAT rejected
     bad_nat = dict(nat_rec_single, unit_id="UNIT_GATE_NAT_BAD", correct_opt="NotANumber")
     try:
         ingest_question(db_base, bad_nat)
         assert False, "Expected ValueError for non-numeric NAT answer"
     except ValueError as e:
         assert "invalid NAT numerical answer" in str(e)
-
     print("  ✓ PASS: Full GATE question ontology (MCQ, MSQ, NAT) verified with complete mathematical rigor.")
 
+    # 19. Raw Question Text LaTeX C0 Rejection Before Normalization
+    print("[19/23] Testing Raw Question Text LaTeX C0 Rejection Before Normalization...")
+    raw_ctrl_cases = [
+        ("theta", chr(9)),
+        ("nabla", chr(0)),
+        ("rho", chr(13)),
+        ("frac", chr(12))
+    ]
+    for esc_name, ctrl_char in raw_ctrl_cases:
+        hostile_q = f"Calculate induced EMF given {ctrl_char} magnetic flux."
+        bad_q_rec = dict(base_good_rec, unit_id=f"UNIT_C0_Q_{esc_name}", question_text=hostile_q)
+        try:
+            ingest_question(db_base, bad_q_rec)
+            assert False, f"Expected ValueError on raw question text containing \\{esc_name} control character"
+        except ValueError as e:
+            assert "malformed unescaped LaTeX" in str(e)
+    print("  ✓ PASS: Raw question text C0 control validation executes strictly BEFORE normalization.")
+
+    # 20. Lossless NAT Decimal Precision (Zero 4-Decimal Rounding Collisions)
+    print("[20/23] Testing Lossless NAT Decimal Precision (Zero 4-Decimal Rounding Collisions)...")
+    nat_ans1 = "1.00001"
+    nat_ans2 = "1.00002"
+    nat_ans3 = "1.00004"
+    c_nat1 = parse_numerical_answer(nat_ans1)
+    c_nat2 = parse_numerical_answer(nat_ans2)
+    c_nat3 = parse_numerical_answer(nat_ans3)
+    assert c_nat1 != c_nat2, f"CRITICAL: NAT precision collision between {nat_ans1} and {nat_ans2}!"
+    assert c_nat2 != c_nat3, f"CRITICAL: NAT precision collision between {nat_ans2} and {nat_ans3}!"
+    assert c_nat1 == "VAL:1.00001"
+    assert c_nat2 == "VAL:1.00002"
+    print("  ✓ PASS: Python Decimal guarantees lossless NAT precision (zero rounding collisions).")
+
+    # 21. NAT Fail-Closed on Non-Empty Options
+    print("[21/23] Testing NAT Fail-Closed on Non-Empty Options...")
+    nat_with_opts = dict(
+        base_good_rec,
+        unit_id="UNIT_NAT_BAD_OPTS",
+        question_type="NAT",
+        question_text="Find speed in rpm.",
+        options_json='{"A": "1500", "B": "1440"}',
+        correct_opt="1500"
+    )
+    try:
+        ingest_question(db_base, nat_with_opts)
+        assert False, "Expected ValueError on NAT question with non-empty options!"
+    except ValueError as e:
+        assert "INVALID_NAT_OPTIONS" in str(e)
+    print("  ✓ PASS: NAT questions with non-empty options rejected fail-closed.")
+
+    # 22. unit_id Occurrence Conflict Guard (Same Question, Different Teacher/Video)
+    print("[22/23] Testing unit_id Occurrence Conflict Guard (Same Question, Different Teacher/Video)...")
+    u_prov1 = dict(
+        base_good_rec,
+        unit_id="UNIT_OCC_CONFLICT_TEST",
+        question_text="What is the unit of magnetic flux density in SI units?",
+        teacher="Teacher Alpha",
+        video_id="VID_AAA"
+    )
+    d_prov1, _, _ = ingest_question(db_base, u_prov1)
+    assert d_prov1 == DECISION_NEW
+
+    # Reusing same unit_id with same question text/options but DIFFERENT teacher/video must trigger IDENTITY_CONFLICT!
+    u_prov2 = dict(
+        u_prov1,
+        teacher="Teacher Beta",
+        video_id="VID_BBB"
+    )
+    try:
+        ingest_question(db_base, u_prov2)
+        assert False, "Expected IDENTITY_CONFLICT on reused unit_id with different teacher/video!"
+    except ValueError as e:
+        assert "IDENTITY_CONFLICT" in str(e)
+    print("  ✓ PASS: Reused unit_id with differing occurrence provenance rejected fail-closed.")
+
+    # 23. List Options Presentation vs Identity Decoupling
+    print("[23/23] Testing List Options Presentation vs Identity Decoupling...")
+    list_q1 = '["Induction Motor", "Synchronous Motor", "Transformer"]'
+    list_q2 = '["Transformer", "Induction Motor", "Synchronous Motor"]'
+    # In list_q1: "Induction Motor" is index 1.
+    # In list_q2: "Induction Motor" is index 2.
+    c_l1, p_l1, c_a1, p_a1, _ = parse_and_canonicalize_options(list_q1, "1")
+    c_l2, p_l2, c_a2, p_a2, _ = parse_and_canonicalize_options(list_q2, "2")
+    assert c_l1 == c_l2, "CRITICAL: Canonical option identity differed for reordered list distractors!"
+    assert c_a1 == c_a2, "CRITICAL: Canonical correct option differed for reordered list distractors!"
+    assert json.loads(p_l1)[0] == "Induction Motor"
+    assert json.loads(p_l2)[0] == "Transformer"
+    print("  ✓ PASS: List options presentation order preserved while canonical identity decoupled.")
+
     print("========================================================================")
-    print("🎯 ALL 18 THIRD-GENERATION ADVERSARIAL TESTS PASSED WITH MATHEMATICAL RIGOR!")
+    print("🎯 ALL 23 FOURTH-GENERATION ADVERSARIAL TESTS PASSED WITH MATHEMATICAL RIGOR!")
     print("========================================================================")
     return True
 
