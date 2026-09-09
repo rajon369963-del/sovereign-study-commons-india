@@ -1,17 +1,10 @@
 name: SHA256 idempotency canary
 
+# Required checks must report on every PR, including documentation-only changes.
 on:
   pull_request:
-    paths:
-      - 'data_lake/sqlite/**'
-      - 'scripts/prove_sha256_idempotency.py'
-      - '.github/workflows/sha256-idempotency-canary.yml'
   push:
     branches: [main]
-    paths:
-      - 'data_lake/sqlite/**'
-      - 'scripts/prove_sha256_idempotency.py'
-      - '.github/workflows/sha256-idempotency-canary.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,6 +16,7 @@ concurrency:
 
 jobs:
   prove-isolated-full-sha-write-boundary:
+    name: SHA256 idempotency canary
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

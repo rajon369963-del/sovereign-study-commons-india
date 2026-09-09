@@ -1,19 +1,10 @@
 name: Data integrity
 
+# Required checks must report on every PR, including documentation-only changes.
 on:
   pull_request:
-    paths:
-      - 'data_lake/**'
-      - 'scripts/repair_fts_sync.py'
-      - 'ci/requirements-data-integrity.txt'
-      - '.github/workflows/data-integrity.yml'
   push:
     branches: [main]
-    paths:
-      - 'data_lake/**'
-      - 'scripts/repair_fts_sync.py'
-      - 'ci/requirements-data-integrity.txt'
-      - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +27,13 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input
           --only-binary=:all: --require-hashes
           -r ci/requirements-data-integrity.txt
+
+      - name: Verify content identity and canonicalization
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
+          python scripts/canonicalize.py --test-adversarial
 
       - name: Verify SQLite and Parquet integrity
         shell: bash
@@ -270,3 +268,16 @@ jobs:
             /tmp/r119-repair-report.json
           if-no-files-found: error
           retention-days: 1
+
+  required-data-integrity:
+    name: Data integrity
+    if: ${{ always() }}
+    needs: [verify-data-lake, prove-r119-repair-candidate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Require every integrity job to succeed
+        env:
+          VERIFY_RESULT: ${{ needs.verify-data-lake.result }}
+          REPAIR_RESULT: ${{ needs.prove-r119-repair-candidate.result }}
+        run: test "$VERIFY_RESULT" = success && test "$REPAIR_RESULT" = success
