@@ -73,6 +73,11 @@ VERIFIED_PROSE_RES = [
         rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?(?:verified|validated|confirmed)\b",
         re.IGNORECASE,
     ),
+    # Count-status-family form: `100 verified competitors` / `one hundred validated competitors`.
+    re.compile(
+        rf"\b({COUNT_TEXT})\s+(?:verified|validated|confirmed)\s+({FAMILY_TEXT})\b",
+        re.IGNORECASE,
+    ),
 ]
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
 
