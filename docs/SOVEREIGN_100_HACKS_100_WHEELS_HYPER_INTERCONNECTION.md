@@ -1,66 +1,53 @@
-# ⚡ SOVEREIGN 100 HACKS, 100 WHEELS & HYPER-INTERCONNECTION MATRIX
-*Canonical Architecture Document | Date: September 9, 2026 | AIR10 / MIGL Factory OS*
+# SOVEREIGN HYPER-INTERCONNECTION RESEARCH TARGETS
+*Truth-hygiene repair | September 9, 2026 | AIR10 / MIGL Factory OS*
 
-## 1. Executive Ground Truth & Founder Mission
-- **Founder**: Rajon Das (`rajon369963-del`)
-- **Primary Goal**: All India Rank under 10 (AIR < 10) in Electrical Engineering (GATE / UPSC ESE Mains).
-- **Core Repository**: `rajon369963-del/sovereign-study-commons-india`
-- **Operating Invariant**: 100% Proactive Full YOLO Mode. Antigravity executes end-to-end, reads between the lines of 50,000+ raw voice transcripts, and enforces the Sovereign Forum-Sourced Wheel & Hyper-Interconnection Law.
+## Status
+This document describes **research targets and candidate mechanisms**, not a completed census. Numeric goals such as 100 competitors, 100 practitioner insights, or 100 reusable wheels are search targets under the MIGL quality-over-quota law. A count is `VERIFIED` only when a reviewable evidence manifest supports every counted item. Evidence status is claim-specific and must be rechecked when the underlying source, implementation, or date-sensitive condition changes.
 
----
+Current status for the claims introduced here:
+- Competitor census: `TARGET` — no 100-item evidence manifest is committed here.
+- Practitioner hacks census: `TARGET` — no 100-item dated/source-linked manifest is committed here.
+- Reusable/downloaded wheels census: `TARGET` — no portable 100-item inventory receipt is committed here.
+- Local-machine tool availability: `UNVERIFIED_FOR_REPOSITORY_USERS` — local paths or private machine inventories are not repository-portable evidence.
 
-## 2. The 100 Competitor Benchmark Architecture
-We systematically examined the architectures of 100 leading open-source study, spaced repetition, ingestion, and agent systems (including Anki FSRS, Memgpt/Letta, Dify, LangChain, LlamaIndex, Open-WebUI, LibreChat, Supabase, Crawl4AI, etc.):
-1. **The Ingestion Bottleneck**: Competitors fail on LaTeX C0 control corruption when ingesting math formulas -> Solved via strict raw string validation before Unicode normalization.
-2. **The Option Scrambling Flaw**: Competitors map answers by option text string instead of original label identity -> Solved via decoupled pointer mapping preserving presentation labels.
-3. **The NAT Floating-Point Trap**: Competitors use IEEE 754 64-bit floats causing false negative grading on GATE 4-decimal precision -> Solved via Python `Decimal` arbitrary-precision arithmetic.
-4. **The Unit Casing Collision**: Competitors lowercase all tokens, collapsing $MW$ ($10^6 W$) into $mW$ ($10^{-3} W$) -> Solved via case-sensitive EE physics unit preservation ($10^9$ factor protection).
+## Evidence contract
+Before promoting a target to `PARTIAL` or `VERIFIED`, record a reviewable manifest containing, as applicable: source/repository URL, retrieval date, extracted mechanism, license/status, and the acceptance test that connects the source to the claim. Do not include learner data, credentials, tokens, private transcripts, or private machine paths.
 
----
+Broad statements such as “competitors fail on X” require bounded, cited examples. Until those examples are independently reproducible, the following are **candidate mechanisms to investigate**, not competitor-wide findings:
+1. raw-control-character corruption before Unicode normalization;
+2. option-label identity loss during presentation shuffling;
+3. floating-point boundary errors in numeric-answer grading;
+4. unit-casing collisions in engineering quantities.
 
-## 3. The 100 Battle-Tested Hacks, Tips & Tricks (Reddit, X, GitHub - Sep 9, 2026)
-Categorized across 5 Operational Clusters:
-- **Cluster A (Data Ingestion & LaTeX)**: Hacks 1–20 covering Depth-tracking balanced brace parsing, pre-normalization C0 sanitization, zero-copy JSON parsing with simdjson, and MinHash LSH near-duplicate quarantine.
-- **Cluster B (GATE/ESE Exam Ontology)**: Hacks 21–40 covering MCQ/MSQ/NAT formal contracts, set deduplication for MSQs, lossless Decimal intervals for NAT, and negative marking trap gates.
-- **Cluster C (Spaced Repetition & FSRS-5)**: Hacks 41–60 covering continuous retrievability min-heaps, domain interval fuzzing across the 5 EE machines domains, 4-lapse leech isolation, and 0.95 exam proximity compression.
-- **Cluster D (Multi-Account Quota Harvester)**: Hacks 61–80 covering 10-account round-robin pools, sliding-window RPM counters, 60s circuit breaker backoff on 429 errors, and zero-downtime token failover.
-- **Cluster E (Zero-Tunnel Sovereign Blackboards)**: Hacks 81–100 covering Git-as-a-Blackboard asynchronous queues, Google Drive inbox/outbox message buses, stdio MCP pipes, and headless clasp deployment.
+## Practitioner insight targets
+Candidate clusters for evidence-backed research include ingestion/LaTeX, exam ontology, spaced repetition, and asynchronous blackboard/Workspace coordination. “Battle-tested” must not be used without source-level evidence.
 
----
+### Provider-safe multi-account rule
+Authorized use of multiple accounts is permitted only within each provider's terms, quotas, permissions, and rate limits. **Do not rotate accounts, tokens, identities, or credentials to bypass quotas, rate limits, access controls, suspensions, or billing restrictions.** On 429/quota exhaustion, honor provider retry/backoff guidance, reduce work, or hand off to another authorized capability for a genuinely separate workload; never use account switching as quota evasion.
 
-## 4. The 100 Downloaded Sovereign Wheels
-Top verified native tools in `~/.local/bin` and rig catalog:
-1. `ripgrep (rg)` - Sub-millisecond recursive regex search.
-2. `simdjson` - Gigabyte-per-second JSON parsing.
-3. `duckdb` - In-process vectorized columnar SQL engine.
-4. `sqlite3` - Embedded ACID relational database in WAL mode.
-5. `gog` - Sovereign Google Workspace CLI (Gmail, Drive, Docs, Sheets, Calendar).
-6. `clasp` - Google Apps Script headless deployer.
-7. `air10-auto-trigger` - Autonomous intent router across 4,977 tools.
-8. `air10-truth-guard` - Physical disk state & SHA-256 assertion verifier.
-9. `air10-study` - Active recall and FSRS-5 spaced repetition engine.
-10. `antigravity-account-switcher` - Multi-account Google OAuth2 switcher.
-*(Complete list of 100 wheels indexed in `/Users/rajondas/.air1/state/TOP100_WHEEL_COURT_20260902.sqlite`)*
+## Reuse-first wheel target
+Prefer existing OSS/CLI/library capabilities over custom rebuilding, but verify each dependency before claiming it is available. Examples such as `ripgrep`, `simdjson`, `duckdb`, `sqlite3`, or `clasp` are candidates, not proof that a contributor's machine has them installed. Repository workflows must declare/install required dependencies or fail closed with an accurate prerequisite message.
 
----
+## Interconnection hypothesis
+A useful composition to test is:
 
-## 5. The Interconnection of Interconnections
-The revolutionary breakthrough is connecting these tools into a single self-healing loop:
 ```
-[Learner Question / Founder Intent]
-               │
-               ▼
-[Sovereign Hyper-RAG (50k Transcripts + EE Vault)]
-               │
-               ▼
-[First-Principles Derivation Harness (Grandfather ESE / Father GATE)]
-               │
-               ▼
-[Adversarial Semantic Court (12 Invariants + 23 Tests)]
-               │
-               ▼
-[Git-as-a-Blackboard & Drive Queue (Zero Tunnel / Zero Browser)]
-               │
-               ▼
-[Full Neural Voice Player (<agent-embed> MadhurNeural 2.0x Click-to-Play)]
+[learner question / founder intent]
+        -> [evidence-backed retrieval]
+        -> [domain reasoning]
+        -> [adversarial semantic checks]
+        -> [append-only Git/Drive coordination]
+        -> [verified output]
 ```
+
+This is an architecture hypothesis. Deployment, learner efficacy, external adoption, and value require separate reality evidence.
+
+## Promotion checklist
+A future change may promote a numeric or broad factual claim only when:
+- the evidence manifest is committed or publicly reviewable;
+- counted items are deduplicated and provenance-bound;
+- cited OSS licenses/status are checked where relevant;
+- at least two examples supporting any broad competitor/problem generalization are independently reproducible;
+- local-machine inventory is not presented as portable repository capability;
+- no quota/rate-limit evasion or unauthorized account-switching instructions are present;
+- normal PR review and required contexts pass.
