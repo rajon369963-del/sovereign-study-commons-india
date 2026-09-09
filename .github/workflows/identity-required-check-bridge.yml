@@ -1,0 +1,61 @@
+name: Identity required-check bridge
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/canonicalize.py'
+      - 'scripts/content_identity_oracle.py'
+      - 'scripts/prove_sha256_idempotency.py'
+      - 'scripts/repair_provenance_and_hashes.js'
+      - 'fixtures/content_identity_v1*.json'
+      - 'docs/CONTENT_IDENTITY_V1.md'
+      - '.github/workflows/identity-required-check-bridge.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/canonicalize.py'
+      - 'scripts/content_identity_oracle.py'
+      - 'scripts/prove_sha256_idempotency.py'
+      - 'scripts/repair_provenance_and_hashes.js'
+      - 'fixtures/content_identity_v1*.json'
+      - 'docs/CONTENT_IDENTITY_V1.md'
+      - '.github/workflows/identity-required-check-bridge.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-required-check-bridge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  identity-integrity:
+    name: Data integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Run fail-closed identity adversaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
+          python scripts/canonicalize.py --test-adversarial
+
+  sha256-idempotency:
+    name: SHA256 idempotency canary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Prove isolated full-SHA write boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp data_lake/sqlite/universal_study_lake.sqlite /tmp/universal_study_lake.sqlite
+          python scripts/prove_sha256_idempotency.py /tmp/universal_study_lake.sqlite
