@@ -2,7 +2,7 @@
 *Truth-hygiene repair | September 9, 2026 | AIR10 / MIGL Factory OS*
 
 ## Status
-This document describes **research targets and candidate mechanisms**, not a completed census. Numeric goals such as 100 competitors, 100 practitioner insights, or 100 reusable wheels are search targets under the MIGL quality-over-quota law. A count is `VERIFIED` only when a reviewable evidence manifest supports every counted item.
+This document describes **research targets and candidate mechanisms**, not a completed census. Numeric goals such as 100 competitors, 100 practitioner insights, or 100 reusable wheels are search targets under the MIGL quality-over-quota law. A count is `VERIFIED` only when a reviewable evidence manifest supports every counted item. Evidence status is claim-specific and must be rechecked when the underlying source, implementation, or date-sensitive condition changes.
 
 Current status for the claims introduced here:
 - Competitor census: `TARGET` — no 100-item evidence manifest is committed here.
