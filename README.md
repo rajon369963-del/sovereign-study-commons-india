@@ -1,6 +1,6 @@
 # ⚡ Sovereign Study Commons India (सार्वजनिक अध्ययन महा-ज्ञानकोश)
 
-> भारत के छात्रों के लिए एक public, open study-data commons. Repository truth is strictly preferred over intended future state.
+> भारत के छात्रों के लिए a public, open study-data commons. Repository truth is strictly preferred over intended future state.
 
 ## Live truth status — verified 9 Sep 2026
 
@@ -8,11 +8,12 @@ Every operational and dataset claim is explicitly classified:
 
 - **`[VERIFIED]` GitHub repository:** public and readable at `https://github.com/rajon369963-del/sovereign-study-commons-india`.
 - **`[VERIFIED]` Dataset assets & manifest:** committed Parquet and SQLite lake assets match physical SHA-256 hashes and row counts verified via [`data_lake/dataset_manifest.json`](data_lake/dataset_manifest.json) and [`scripts/verify_dataset_manifest.py`](scripts/verify_dataset_manifest.py).
-- **`[VERIFIED]` Integrity CI automation:** `.github/workflows/data-integrity.yml` and `.github/workflows/sha256-idempotency-canary.yml` are active on the default branch and passing on `main`. These read-only checks enforce SQLite schema integrity and SHA-256 byte boundaries.
-- **`[VERIFIED]` Review-only intake boundary:** `.github/ISSUE_TEMPLATE/ingest_lecture_playlist.yml` creates a maintainer review request only; it does not trigger automatic ingestion.
+- **`[VERIFIED]` Integrity CI automation:** `.github/workflows/data-integrity.yml` and `.github/workflows/sha256-idempotency-canary.yml` are active on the default branch. These are bounded integrity checks; they do not prove persistent semantic-identity migration or learner value.
+- **`[VERIFIED_BOUNDED]` Public Pages endpoint smoke:** `.github/workflows/pages-endpoint-smoke.yml` has physically executed an unauthenticated external GET from GitHub Actions and passed HTTP 200, the stable `Sovereign Study Commons India` title marker, and stale unsafe-marker rejection. This proves bounded endpoint reachability/content truth only, **not** browser E2E, mobile/accessibility, JavaScript interaction correctness, or learner value.
+- **`[CONFIGURED_NOT_YET_PERIODICALLY_VERIFIED]` Pages freshness schedule:** the existing Pages smoke has a low-frequency 6-hour default-branch schedule with event/ref/repository-SHA receipt fields. Periodic freshness remains unverified until a real `schedule` event physically runs against the then-latest default-branch SHA.
+- **`[VERIFIED]` Review-only intake boundary:** default-branch repository bytes contain the evidence-first bug/data-integrity/provenance Issue Form plus the lecture-review form. Issue-form structure is submission-time structure, not immutable evidence; real triage usefulness remains unvalidated until external traffic exists.
 - **`[STAGED]` Harvest & Hugging Face automation:** `workflows_template/auto_harvest_and_hf_sync.yml` remains a **staged template**, not an active GitHub Actions workflow.
-- **`[UNVERIFIED]` Remote Hugging Face sync:** live automated syncing to Hugging Face datasets remains unverified until end-to-end authenticated API runs succeed.
-- **`[UNVERIFIED]` Browser / Cockpit production deployment:** repository artifacts and CI checks do not imply that external web hosting or mobile deployments are independently verified beyond local file inspection.
+- **`[UNVERIFIED]` Remote Hugging Face sync:** live automated syncing to Hugging Face datasets remains unverified until end-to-end authenticated upload, readback, and hash parity succeed.
 
 ## Try it now (< 60 seconds)
 
@@ -43,7 +44,7 @@ This command is intentionally local and reproducible; it does not depend on remo
 
 ## Cockpit
 
-A standalone HTML artifact is available at [`cockpit/index.html`](cockpit/index.html). It operates as a demo interface with explicit truth boundaries.
+A standalone HTML artifact is available at [`cockpit/index.html`](cockpit/index.html). Public endpoint reachability has bounded automated evidence as described above; interactive browser correctness and learner utility remain separate verification gates.
 
 ## Contributing
 

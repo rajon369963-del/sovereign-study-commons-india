@@ -1,28 +1,30 @@
 # Sovereign Study Commons India — Public Roadmap
 
-_Last verified: 9 Sep 2026 against `main` at `ccadb235b7b240d729230054e3e8dc0d0d3aaa41`._
+_Last verified: 9 Sep 2026 against default-branch state after Pages smoke/freshness work; exact main SHA must be re-read before promotion because `main` continues to advance._
 
 This roadmap is truth-ranked. Current repository facts are separated from staged, unverified, and blocked work.
 
 ## Verified now
 
-- The public repository exists on `main` and currently contains public UI files, SQLite and Parquet data assets, scripts, dataset documentation, contributor/governance files, issue templates, and two GitHub Actions workflows in `.github/workflows/`.
+- The public repository exists on `main` and currently contains public UI files, SQLite and Parquet data assets, scripts, dataset documentation, contributor/governance files, issue templates, and **three** GitHub Actions workflows in `.github/workflows/`: `data-integrity.yml`, `sha256-idempotency-canary.yml`, and `pages-endpoint-smoke.yml`.
 - `main` is protected and currently requires the contexts `Data integrity` and `SHA256 idempotency canary` for non-admin merges. This is bounded governance evidence, not proof of an admin-proof/no-bypass policy.
-- PR #33 merged through the normal protected path. On its exact head, both required workflows completed successfully. Current workflow definitions now emit both required contexts on every pull request; path filters remain only for pushes to `main`.
-- PR #44 merged through the normal protected path after both required contexts passed on its exact head, replacing stale roadmap state with truth-ranked current repository claims.
-- PR #45 merged through the normal protected path after both required contexts passed on its exact head. Default-branch repository bytes now contain the evidence-first bug/data-integrity/provenance Issue Form, `config.yml` with blank issues disabled, and `SUPPORT.md` with privacy, copyright, issue-editability, and no-overclaim boundaries.
+- PR #33 merged through the normal protected path. Current workflow definitions emit both required integrity contexts on every pull request; path filters remain only for pushes to `main`.
+- Default-branch repository bytes contain the evidence-first bug/data-integrity/provenance Issue Form, `config.yml` with blank issues disabled, the lecture-review form, and `SUPPORT.md` with privacy, copyright, issue-editability, and no-overclaim boundaries.
 - The `Data integrity` workflow performs bounded SQLite/Parquet integrity checks, explicit FTS membership checks, key/provenance uniqueness checks where supported, and the canonicalization adversarial suite.
 - The `SHA256 idempotency canary` exercises the isolated full-hash write-boundary canary. This does not prove persistent semantic-identity migration in the committed database.
+- The `Pages endpoint smoke` has physically executed an unauthenticated external GET from GitHub Actions and passed HTTP 200, the stable public title marker, and stale unsafe-marker rejection. This is **`PUBLIC_ENDPOINT_REACHABILITY=PASS_BOUNDED_EXECUTED`** only; it is not browser E2E, mobile/accessibility, JavaScript-interaction, or learner-value proof.
+- The Pages smoke now has a low-frequency 6-hour default-branch schedule with event/ref/repository-SHA receipt fields. This schedule is **CONFIGURED**, not yet `VERIFIED_PERIODIC_EXECUTION`; a real `schedule` event must physically run against the then-latest default-branch SHA before periodic freshness is promoted.
 - Existing repaired SQLite evidence establishes a bounded source↔FTS membership state and transactional trigger synchronization on the tested artifact. It does not reconstruct historical causality by itself.
 - The Spark daemon truth repair is merged: unsupported physical-verification claims were downgraded and daemon-side ambient Git commits were removed from that component.
 - Issue #10 is a public opt-in pilot surface, but there are still zero verified non-founder same-human value events. Public availability alone is not learner-value or G3 evidence.
 
 ## Staged or independently unverified
 
-- Repository bytes prove the structured issue-intake files exist on default branch, but independent public chooser rendering and real triage usefulness remain UNVERIFIED until physically observed.
-- GitHub Pages availability or successful deployment workflow is not equivalent to independently verified learner-facing browser correctness.
+- Repository bytes prove the structured issue-intake files exist on default branch, but independent public issue-chooser rendering and real triage usefulness remain UNVERIFIED until physically observed.
+- A successful Pages endpoint smoke is not equivalent to independently verified learner-facing browser correctness or learner value.
+- Periodic Pages freshness remains UNVERIFIED until the first real default-branch `schedule` run succeeds and records the then-current repository SHA.
 - Hugging Face activation and GitHub↔Hugging Face↔Drive exact snapshot parity remain unverified.
-- Persistent semantic-identity migration, DB `UNIQUE`/upsert promotion, provenance referential integrity, real transcript/source ingestion, and crash-safe Parquet replacement remain HOLD until their independent courts pass.
+- Persistent semantic-identity migration, DB `UNIQUE`/upsert promotion, provenance referential integrity, real transcript/source ingestion, C17 Linux/x86 portability, and crash-safe Parquet replacement remain HOLD until their independent courts pass.
 - Numerical learner gains remain UNVALIDATED. Fixed category retest intervals are `FIXED_DIAGNOSTIC_RETEST_CANARY`, not FSRS, and no neural-consolidation claim is made.
 
 ## P0 — Truth, safety, and reproducibility
@@ -33,6 +35,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 4. Replace direct canonical Parquet writes with temp → validate → atomic rename before calling export crash-safe.
 5. Bind provenance/license status for externally sourced or derived assets before redistribution or parity promotion.
 6. Keep semantic identity, persistent DB migration, and ingestion claims on HOLD until independent adversarial proof exists.
+7. Keep Pages periodic-freshness acceptance open until a real scheduled run binds `event=schedule`, `refs/heads/main`, and the then-latest default-branch SHA.
 
 ## P1 — Contributor usefulness
 
@@ -61,10 +64,11 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 - Current docs contain zero deployment, automation, provenance, parity, or learner-value claims that exceed physical evidence.
 - Required checks appear on fresh pull requests and normal protected merges are blocked when a required context is red.
+- Pages periodic-freshness promotion occurs only after a real `schedule` event binds the then-current default-branch SHA and the existing endpoint assertions pass.
 - Data assets have deterministic integrity/hash/provenance evidence and crash-safe export semantics.
 - Contributor issues/forms reduce ambiguity without collecting unnecessary sensitive data.
 - Real-user and external-contributor metrics are reported separately from owner-created activity.
 
 ## Historical note
 
-Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, and a zero-job dependency hash-lock frontier. Those were valid snapshots of an earlier phase but are superseded by the current verified state above.
+Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, a two-workflow state before the Pages smoke, and a zero-job dependency hash-lock frontier. Those were valid snapshots of earlier phases but are superseded by the current verified state above.
