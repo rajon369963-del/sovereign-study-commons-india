@@ -54,6 +54,8 @@ jobs:
 
           report = {'sqlite': [], 'parquet': []}
 
+          # Repository-specific intended membership contracts. These are explicit on
+          # purpose: a green build must not infer away an unexplained source/index gap.
           expected_fts_sources = {
               'universal_fts': 'study_units',
           }
@@ -62,6 +64,7 @@ jobs:
               return '"' + name.replace('"', '""') + '"'
 
           def bounded_metadata(con, table, rowids):
+              """Return only provenance/key metadata for drifted rows, never study text."""
               cols = [r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')]
               allowed_tokens = ('id', 'hash', 'sha', 'source', 'license', 'status', 'index', 'include', 'exclude', 'type')
               safe_cols = [c for c in cols if any(tok in c.lower() for tok in allowed_tokens)][:12]
@@ -98,6 +101,7 @@ jobs:
                       for t in tables
                   }
 
+                  # Fail closed on duplicate identity/provenance keys where present.
                   for table in tables:
                       cols = {r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')}
                       for key in ('unit_id', 'sha256_hash'):
@@ -111,6 +115,9 @@ jobs:
                                   f'total={total}, nonnull={nonnull}, distinct={distinct}'
                               )
 
+                  # Fail closed on unexplained FTS5 membership drift. Physical SQLite
+                  # integrity is not enough: the search index must represent the intended
+                  # source-table membership, not merely be internally self-consistent.
                   fts_contracts = []
                   fts_tables = sorted(
                       name for name, meta in objects.items()
