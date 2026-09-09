@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/pages-endpoint-smoke.yml'
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +23,7 @@ jobs:
           url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
           body="$(mktemp)"
           code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
-          printf 'endpoint=%s http=%s bytes=%s sha256=%s\n' "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
+          printf 'evidence_subject_sha=%s trigger=%s endpoint=%s http=%s bytes=%s sha256=%s\n' "$GITHUB_SHA" "$GITHUB_EVENT_NAME" "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
           grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
           test "$code" = '200'
           grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
@@ -29,4 +31,4 @@ jobs:
             echo 'stale unsafe verification marker detected on public endpoint' >&2
             exit 1
           fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED url=%s http=%s marker=%s\n' "$url" "$code" 'Universal Sovereign Study Lake title'
+          printf 'PUBLIC_ENDPOINT_VERIFIED subject_sha=%s trigger=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$GITHUB_EVENT_NAME" "$url" "$code" 'Universal Sovereign Study Lake title'
