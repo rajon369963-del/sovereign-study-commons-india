@@ -1,17 +1,18 @@
 # Sovereign Study Commons India — Public Roadmap
 
-_Last verified: 9 Sep 2026 against default-branch state after Pages smoke/freshness work; exact main SHA must be re-read before promotion because `main` continues to advance._
+_Last verified: 9 Sep 2026 against default-branch state after DuckDB CLI proof; exact main SHA must be re-read before promotion because `main` continues to advance._
 
 This roadmap is truth-ranked. Current repository facts are separated from staged, unverified, and blocked work.
 
 ## Verified now
 
-- The public repository exists on `main` and currently contains public UI files, SQLite and Parquet data assets, scripts, dataset documentation, contributor/governance files, issue templates, and **three** GitHub Actions workflows in `.github/workflows/`: `data-integrity.yml`, `sha256-idempotency-canary.yml`, and `pages-endpoint-smoke.yml`.
+- The public repository exists on `main` and currently contains public UI files, SQLite and Parquet data assets, scripts, dataset documentation, contributor/governance files, issue templates, and **four** GitHub Actions workflows in `.github/workflows/`: `data-integrity.yml`, `sha256-idempotency-canary.yml`, `pages-endpoint-smoke.yml`, and `duckdb-cli-smoke.yml`.
 - `main` is protected and currently requires the contexts `Data integrity` and `SHA256 idempotency canary` for non-admin merges. This is bounded governance evidence, not proof of an admin-proof/no-bypass policy.
 - PR #33 merged through the normal protected path. Current workflow definitions emit both required integrity contexts on every pull request; path filters remain only for pushes to `main`.
 - Default-branch repository bytes contain the evidence-first bug/data-integrity/provenance Issue Form, `config.yml` with blank issues disabled, the lecture-review form, and `SUPPORT.md` with privacy, copyright, issue-editability, and no-overclaim boundaries.
 - The `Data integrity` workflow performs bounded SQLite/Parquet integrity checks, explicit FTS membership checks, key/provenance uniqueness checks where supported, and the canonicalization adversarial suite.
 - The `SHA256 idempotency canary` exercises the isolated full-hash write-boundary canary. This does not prove persistent semantic-identity migration in the committed database.
+- The `DuckDB CLI smoke` installs pinned DuckDB CLI `1.5.5`, verifies the downloaded archive SHA-256, and runs the existing regression harness against committed Parquet assets on relevant pull requests and pushes. This is bounded CLI/query-path evidence only; it does not prove dataset provenance, redistribution permission, GitHub↔HF↔Drive parity, or learner value.
 - The `Pages endpoint smoke` has physically executed an unauthenticated external GET from GitHub Actions and passed HTTP 200, the stable public title marker, and stale unsafe-marker rejection. This is **`PUBLIC_ENDPOINT_REACHABILITY=PASS_BOUNDED_EXECUTED`** only; it is not browser E2E, mobile/accessibility, JavaScript-interaction, or learner-value proof.
 - The Pages smoke now has a low-frequency 6-hour default-branch schedule with event/ref/repository-SHA receipt fields. This schedule is **CONFIGURED**, not yet `VERIFIED_PERIODIC_EXECUTION`; a real `schedule` event must physically run against the then-latest default-branch SHA before periodic freshness is promoted.
 - Existing repaired SQLite evidence establishes a bounded source↔FTS membership state and transactional trigger synchronization on the tested artifact. It does not reconstruct historical causality by itself.
@@ -71,4 +72,4 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 ## Historical note
 
-Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, a two-workflow state before the Pages smoke, and a zero-job dependency hash-lock frontier. Those were valid snapshots of earlier phases but are superseded by the current verified state above.
+Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, a two-workflow state before the Pages smoke, and a three-workflow state before the real DuckDB CLI smoke. Those were valid snapshots of earlier phases but are superseded by the current verified state above.
