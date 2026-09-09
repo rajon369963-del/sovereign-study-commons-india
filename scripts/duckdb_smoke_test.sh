@@ -14,17 +14,14 @@ cd "${REPO_ROOT}"
 
 echo "=== Sovereign Study Commons India: DuckDB Smoke Test Harness ==="
 
-# Determine DuckDB engine (native CLI or Python duckdb module)
-DUCKDB_CMD=""
-if command -v duckdb >/dev/null 2>&1; then
-    DUCKDB_CMD="duckdb"
-elif python3 -c "import duckdb" >/dev/null 2>&1; then
-    DUCKDB_CMD="python3 -c \"import sys, duckdb; con = duckdb.connect(); [con.execute(q) for q in sys.argv[1:]]\""
-else
-    echo "[-] FATAL: Neither duckdb CLI nor python3 duckdb module is available." >&2
+# The smoke queries below use the DuckDB CLI directly. Fail closed before any
+# dataset work instead of advertising a Python-module fallback that is not used.
+if ! command -v duckdb >/dev/null 2>&1; then
+    echo "[-] FATAL: DuckDB CLI is required for this smoke test but was not found in PATH." >&2
+    echo "[-] Install the DuckDB CLI, then rerun ./scripts/duckdb_smoke_test.sh." >&2
     exit 1
 fi
-echo "[+] Using DuckDB engine: ${DUCKDB_CMD}"
+echo "[+] Using DuckDB CLI: $(command -v duckdb)"
 
 # 1. Target Assets Verification
 PARQUET_ASSETS=(
@@ -83,7 +80,7 @@ echo "=== 3. Bounded Query 2: GATE EE Questions Top Subjects & Average Marks ===
 duckdb -c "
 SELECT 
     subject, 
-    count(*) AS q_count, 
+    count(*) AS q_count,
     round(avg(marks), 2) AS avg_marks,
     round(avg(negative_marks), 2) AS avg_neg_marks
 FROM 'data_lake/parquet/gate_ee_5k_questions.parquet'
