@@ -23,7 +23,7 @@ Good contributions:
 - Fix a broken link, ambiguous status label, typo, or stale setup instruction.
 - Improve a glossary entry so a newcomer can understand a dataset field or exam branch.
 
-Current small task: [Issue #1 — audit README live-status claims](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/1).
+Current small task: [Issue #56 — verify the public Issue chooser renders the intended bounded intake](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/56).
 
 **Acceptance test:** another person can follow the edited text and reach the same factual conclusion from public evidence.
 
@@ -38,7 +38,9 @@ Good contributions:
 - When recording hashes, state exactly what bytes were hashed and which algorithm/version produced the value; snapshot uniqueness alone is not a semantic identity contract.
 - When correcting an identity-bearing quote, locator, source version, or evidence span, record the previous value, corrected value, authoritative evidence, source/version, correction reason, and actor/process/receipt instead of overwriting provenance silently.
 
-Current small task: [Issue #2 — dataset manifest/provenance](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/2).
+Current small tasks:
+- [Issue #53 — provenance/license court for `gate_ee_5k_questions.parquet`](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/53).
+- [Issue #54 — provenance/license court for `upsc_polity_5k_videos.parquet`](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/54).
 
 **Acceptance test:** every changed row points to a retrievable source and has enough provenance for an independent reviewer to reproduce the classification. Hash-bearing rows additionally identify the hashed payload and algorithm/version so another reviewer can recompute the value. Evidence-anchor corrections additionally let a reviewer reconstruct the before/after anchor and decide whether the revision is cosmetic, substantive, or a source-version change without trusting the contributor's label.
 
@@ -51,7 +53,7 @@ Good contributions:
 - Turn a README example into a deterministic test fixture.
 - Verify schema/column assumptions and report exact failures instead of silently adapting them.
 
-Current small task: [Issue #3 — DuckDB smoke tests](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/3).
+Current small task: none verified open at this rung right now. Check the repository's open `good first issue` / `help wanted` queue before starting work.
 
 **Acceptance test:** a clean environment can run the documented command against current `main` and get the documented schema/result class.
 
@@ -64,7 +66,7 @@ Good contributions:
 - Connect README sections to examples, issue templates, provenance docs, roadmap entries, and contribution tasks.
 - Improve issue templates so scope, source evidence, acceptance tests, and license risk are explicit.
 
-Current small task: [Issue #4 — evidence-backed topics and discoverability glossary](https://github.com/rajon369963-del/sovereign-study-commons-india/issues/4).
+Current small task: none verified open at this rung right now. Check the repository's open `good first issue` / `help wanted` queue before starting work.
 
 **Acceptance test:** every discoverability term maps to a current repository artifact or documented supported branch; no keyword stuffing.
 
