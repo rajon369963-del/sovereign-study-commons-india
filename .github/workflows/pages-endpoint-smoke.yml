@@ -24,9 +24,9 @@ jobs:
           printf 'endpoint=%s http=%s bytes=%s sha256=%s\n' "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
           grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
           test "$code" = '200'
-          grep -Fq 'Sovereign Study Commons India' "$body"
+          grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
           if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
             echo 'stale unsafe verification marker detected on public endpoint' >&2
             exit 1
           fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED url=%s http=%s marker=%s\n' "$url" "$code" 'Sovereign Study Commons India'
+          printf 'PUBLIC_ENDPOINT_VERIFIED url=%s http=%s marker=%s\n' "$url" "$code" 'Universal Sovereign Study Lake title'
