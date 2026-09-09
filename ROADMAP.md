@@ -1,6 +1,6 @@
 # Sovereign Study Commons India — Public Roadmap
 
-_Last verified: 9 Sep 2026 against default-branch state after DuckDB CLI proof; exact main SHA must be re-read before promotion because `main` continues to advance._
+_Last verified: 9 Sep 2026 against default-branch state after DuckDB CLI and first scheduled Pages-freshness proofs; exact main SHA must be re-read before promotion because `main` continues to advance._
 
 This roadmap is truth-ranked. Current repository facts are separated from staged, unverified, and blocked work.
 
@@ -14,7 +14,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 - The `SHA256 idempotency canary` exercises the isolated full-hash write-boundary canary. This does not prove persistent semantic-identity migration in the committed database.
 - The `DuckDB CLI smoke` installs pinned DuckDB CLI `1.5.5`, verifies the downloaded archive SHA-256, and runs the existing regression harness against committed Parquet assets on relevant pull requests and pushes. This is bounded CLI/query-path evidence only; it does not prove dataset provenance, redistribution permission, GitHub↔HF↔Drive parity, or learner value.
 - The `Pages endpoint smoke` has physically executed an unauthenticated external GET from GitHub Actions and passed HTTP 200, the stable public title marker, and stale unsafe-marker rejection. This is **`PUBLIC_ENDPOINT_REACHABILITY=PASS_BOUNDED_EXECUTED`** only; it is not browser E2E, mobile/accessibility, JavaScript-interaction, or learner-value proof.
-- The Pages smoke now has a low-frequency 6-hour default-branch schedule with event/ref/repository-SHA receipt fields. This schedule is **CONFIGURED**, not yet `VERIFIED_PERIODIC_EXECUTION`; a real `schedule` event must physically run against the then-latest default-branch SHA before periodic freshness is promoted.
+- The Pages smoke 6-hour schedule has now physically executed as a genuine `schedule` event on default-branch SHA `6392f726e84cea44716a5f1c1a5c9f8c44740f03`; the public-endpoint job and endpoint assertion step succeeded. This is **`VERIFIED_PERIODIC_EXECUTION=PASS_BOUNDED` for that SHA only**. It is not an SLA or permanent freshness guarantee, and any later `main` change makes that freshness evidence stale until a newer scheduled success binds the new SHA.
 - Existing repaired SQLite evidence establishes a bounded source↔FTS membership state and transactional trigger synchronization on the tested artifact. It does not reconstruct historical causality by itself.
 - The Spark daemon truth repair is merged: unsupported physical-verification claims were downgraded and daemon-side ambient Git commits were removed from that component.
 - Issue #10 is a public opt-in pilot surface, but there are still zero verified non-founder same-human value events. Public availability alone is not learner-value or G3 evidence.
@@ -23,7 +23,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 - Repository bytes prove the structured issue-intake files exist on default branch, but independent public issue-chooser rendering and real triage usefulness remain UNVERIFIED until physically observed.
 - A successful Pages endpoint smoke is not equivalent to independently verified learner-facing browser correctness or learner value.
-- Periodic Pages freshness remains UNVERIFIED until the first real default-branch `schedule` run succeeds and records the then-current repository SHA.
+- Pages periodic freshness is verified only for the recorded scheduled run on SHA `6392f726e84cea44716a5f1c1a5c9f8c44740f03`; freshness after any later default-branch mutation remains UNVERIFIED until the next genuine scheduled run succeeds on the then-current SHA.
 - Hugging Face activation and GitHub↔Hugging Face↔Drive exact snapshot parity remain unverified.
 - Persistent semantic-identity migration, DB `UNIQUE`/upsert promotion, provenance referential integrity, real transcript/source ingestion, C17 Linux/x86 portability, and crash-safe Parquet replacement remain HOLD until their independent courts pass.
 - Numerical learner gains remain UNVALIDATED. Fixed category retest intervals are `FIXED_DIAGNOSTIC_RETEST_CANARY`, not FSRS, and no neural-consolidation claim is made.
@@ -36,7 +36,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 4. Replace direct canonical Parquet writes with temp → validate → atomic rename before calling export crash-safe.
 5. Bind provenance/license status for externally sourced or derived assets before redistribution or parity promotion.
 6. Keep semantic identity, persistent DB migration, and ingestion claims on HOLD until independent adversarial proof exists.
-7. Keep Pages periodic-freshness acceptance open until a real scheduled run binds `event=schedule`, `refs/heads/main`, and the then-latest default-branch SHA.
+7. Keep Pages periodic-freshness claims SHA-bound: the first real scheduled proof covers `6392f726e84cea44716a5f1c1a5c9f8c44740f03` only; after any later `main` mutation, wait for the next genuine `schedule` run and endpoint assertions before promoting freshness again.
 
 ## P1 — Contributor usefulness
 
@@ -65,11 +65,11 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 - Current docs contain zero deployment, automation, provenance, parity, or learner-value claims that exceed physical evidence.
 - Required checks appear on fresh pull requests and normal protected merges are blocked when a required context is red.
-- Pages periodic-freshness promotion occurs only after a real `schedule` event binds the then-current default-branch SHA and the existing endpoint assertions pass.
+- Pages periodic-freshness remains SHA-bound: a successful genuine `schedule` event plus endpoint assertions establishes bounded freshness for that exact default-branch SHA, and a later `main` change requires a newer scheduled proof.
 - Data assets have deterministic integrity/hash/provenance evidence and crash-safe export semantics.
 - Contributor issues/forms reduce ambiguity without collecting unnecessary sensitive data.
 - Real-user and external-contributor metrics are reported separately from owner-created activity.
 
 ## Historical note
 
-Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, a two-workflow state before the Pages smoke, and a three-workflow state before the real DuckDB CLI smoke. Those were valid snapshots of earlier phases but are superseded by the current verified state above.
+Earlier September 2026 roadmap states referenced PR #5 as open/unmerged, `.github/workflows/` as absent from `main`, a two-workflow state before the Pages smoke, a three-workflow state before the real DuckDB CLI smoke, and a configured-but-not-yet-periodically-verified Pages schedule. Those were valid snapshots of earlier phases but are superseded by the current verified state above.
