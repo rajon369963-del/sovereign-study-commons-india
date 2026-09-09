@@ -1,6 +1,6 @@
 # Sovereign Study Commons India — Public Roadmap
 
-_Last verified: 9 Sep 2026 against `main` at `c7189e5054f919d81cbb535457df7c940f7cc217`._
+_Last verified: 9 Sep 2026 against `main` at `ccadb235b7b240d729230054e3e8dc0d0d3aaa41`._
 
 This roadmap is truth-ranked. Current repository facts are separated from staged, unverified, and blocked work.
 
@@ -9,6 +9,8 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 - The public repository exists on `main` and currently contains public UI files, SQLite and Parquet data assets, scripts, dataset documentation, contributor/governance files, issue templates, and two GitHub Actions workflows in `.github/workflows/`.
 - `main` is protected and currently requires the contexts `Data integrity` and `SHA256 idempotency canary` for non-admin merges. This is bounded governance evidence, not proof of an admin-proof/no-bypass policy.
 - PR #33 merged through the normal protected path. On its exact head, both required workflows completed successfully. Current workflow definitions now emit both required contexts on every pull request; path filters remain only for pushes to `main`.
+- PR #44 merged through the normal protected path after both required contexts passed on its exact head, replacing stale roadmap state with truth-ranked current repository claims.
+- PR #45 merged through the normal protected path after both required contexts passed on its exact head. Default-branch repository bytes now contain the evidence-first bug/data-integrity/provenance Issue Form, `config.yml` with blank issues disabled, and `SUPPORT.md` with privacy, copyright, issue-editability, and no-overclaim boundaries.
 - The `Data integrity` workflow performs bounded SQLite/Parquet integrity checks, explicit FTS membership checks, key/provenance uniqueness checks where supported, and the canonicalization adversarial suite.
 - The `SHA256 idempotency canary` exercises the isolated full-hash write-boundary canary. This does not prove persistent semantic-identity migration in the committed database.
 - Existing repaired SQLite evidence establishes a bounded source↔FTS membership state and transactional trigger synchronization on the tested artifact. It does not reconstruct historical causality by itself.
@@ -17,7 +19,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 ## Staged or independently unverified
 
-- Structured issue intake and support-routing changes remain staged until refreshed from current `main`, required checks pass on the refreshed exact head, and default-branch rendering is independently read back.
+- Repository bytes prove the structured issue-intake files exist on default branch, but independent public chooser rendering and real triage usefulness remain UNVERIFIED until physically observed.
 - GitHub Pages availability or successful deployment workflow is not equivalent to independently verified learner-facing browser correctness.
 - Hugging Face activation and GitHub↔Hugging Face↔Drive exact snapshot parity remain unverified.
 - Persistent semantic-identity migration, DB `UNIQUE`/upsert promotion, provenance referential integrity, real transcript/source ingestion, and crash-safe Parquet replacement remain HOLD until their independent courts pass.
@@ -34,7 +36,7 @@ This roadmap is truth-ranked. Current repository facts are separated from staged
 
 ## P1 — Contributor usefulness
 
-1. Refresh the native structured defect Issue Form, `SUPPORT.md`, and chooser config onto current protected `main` without adding bots, CRM, or third-party triage automation.
+1. Independently verify the default-branch issue chooser renders both the evidence-defect form and the existing lecture-review form while blank issues remain disabled; keep real triage benefit UNVALIDATED until external traffic exists.
 2. Keep a small set of honest `good first issue` / `help wanted` tasks tied to real user or maintainer value.
 3. Require reproduction, expected/observed behavior, tests/screenshots/logs/rationale as applicable while minimizing private or copyrighted content.
 4. Track external contributors, repeat contributors, real downstream users, and owner-created activity separately.
