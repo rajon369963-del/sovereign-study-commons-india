@@ -29,6 +29,12 @@ python3 scripts/verify_dataset_manifest.py
 python3 scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
 ```
 
+To regression-test CLI detection and query-error handling (requires `python3` and the DuckDB CLI):
+
+```bash
+python3 scripts/test_duckdb_smoke_test.py
+```
+
 ## Quick local query (DuckDB)
 
 If you have DuckDB installed, query a local Parquet artifact directly:
