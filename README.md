@@ -16,7 +16,7 @@ Every operational and dataset claim is explicitly classified:
 
 ## Try it now (< 60 seconds)
 
-Clone the repository and run deterministic verification with a single command:
+Prerequisites: `python3` and the DuckDB CLI must already be available in `PATH`. Then run these three local verification commands; they do not upload data or require a hosted service:
 
 ```bash
 # 1. Run DuckDB smoke queries against committed Parquet assets
