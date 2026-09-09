@@ -1,0 +1,48 @@
+name: DuckDB CLI smoke
+
+on:
+  pull_request:
+    paths:
+      - 'data_lake/parquet/**'
+      - 'scripts/duckdb_smoke_test.sh'
+      - 'scripts/test_duckdb_smoke_test.py'
+      - '.github/workflows/duckdb-cli-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'data_lake/parquet/**'
+      - 'scripts/duckdb_smoke_test.sh'
+      - 'scripts/test_duckdb_smoke_test.py'
+      - '.github/workflows/duckdb-cli-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-cli-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install pinned DuckDB CLI 1.5.5
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://github.com/duckdb/duckdb/releases/download/v1.5.5/duckdb_cli-linux-amd64.zip'
+          curl --fail --location --retry 3 --output /tmp/duckdb_cli.zip "$url"
+          echo '08c0ca117111fcede14239d0093792352befdc174218c344d232c13279643d05  /tmp/duckdb_cli.zip' | sha256sum --check --strict
+          unzip -q /tmp/duckdb_cli.zip -d /tmp/duckdb-cli
+          chmod +x /tmp/duckdb-cli/duckdb
+          echo '/tmp/duckdb-cli' >> "$GITHUB_PATH"
+          /tmp/duckdb-cli/duckdb --version
+
+      - name: Run real CLI regression against committed Parquet
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v duckdb
+          duckdb --version
+          python3 scripts/test_duckdb_smoke_test.py
