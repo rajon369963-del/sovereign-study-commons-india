@@ -1,0 +1,113 @@
+name: 🧪 Report bug, data-integrity, or provenance defect
+description: Report one reproducible repository, dataset, integrity, or source-lineage defect with evidence. Do not include secrets or private learner data.
+title: "[EVIDENCE-DEFECT]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Evidence-first defect report
+        Use this form for one bounded, reproducible bug, data-integrity, or provenance problem.
+
+        **Do not post:** passwords, tokens, private learner telemetry, personal contact details, copyrighted bulk question/transcript dumps, or other sensitive data. Redact evidence before attaching it.
+
+        A report is evidence for triage, not proof that a fix is deployed or that learner outcomes improve.
+
+  - type: dropdown
+    id: defect_class
+    attributes:
+      label: Defect class
+      description: Choose the closest failure mode.
+      options:
+        - Repository / application bug
+        - SQLite / Parquet integrity or schema defect
+        - Hash / deduplication / identity defect
+        - Provenance / source-lineage / attribution defect
+        - GitHub ↔ Hugging Face ↔ Drive parity defect
+        - Documentation / demo-vs-real claim defect
+        - Other evidence-bound defect
+    validations:
+      required: true
+
+  - type: input
+    id: affected_object
+    attributes:
+      label: Affected object or identifier
+      description: Give the smallest useful identifier, such as file path, unit_id, commit SHA, workflow run, dataset row, or public source URL.
+      placeholder: e.g. scripts/canonicalize.py, unit_id=GATEEE-COM-004, commit abc123...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: List the shortest deterministic steps or command sequence that reproduces the problem.
+      placeholder: |
+        1. Start from commit / release ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected behavior
+      description: State the invariant or result that should hold.
+    validations:
+      required: true
+
+  - type: textarea
+    id: observed_behavior
+    attributes:
+      label: Observed behavior
+      description: State exactly what happened instead. Include counts, hashes, error text, or other bounded facts when available.
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Show-your-work evidence
+      description: Paste privacy-safe logs, hashes, test output, screenshots, or links that support the report. Redact secrets and private data.
+      placeholder: Include the smallest evidence needed to reproduce or falsify the claim.
+    validations:
+      required: true
+
+  - type: textarea
+    id: provenance
+    attributes:
+      label: Source / provenance context
+      description: For data or attribution defects, provide public source URL(s), source version/date, license/permission evidence if known, and causal identifiers. For code-only bugs, write N/A.
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / version
+      description: OS/runtime/browser/package version or repository commit SHA relevant to reproduction. Write N/A when not applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_scope
+    attributes:
+      label: Smallest safe fix or acceptance test
+      description: Optional. Describe one bounded fix or test that would prove the defect is repaired without weakening invariants.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Safety and evidence confirmations
+      options:
+        - label: I searched existing issues and am reporting one bounded defect rather than a duplicate bundle.
+          required: true
+        - label: I have not included passwords, API keys, private learner telemetry, personal contact information, or other sensitive data.
+          required: true
+        - label: I have not pasted copyrighted bulk question/transcript content; any evidence is minimal and necessary for reproduction.
+          required: true
+        - label: I understand a green test or accepted report does not by itself prove deployment, provenance/license validity, parity, or learner-value gains.
+          required: true
