@@ -1,164 +1,161 @@
 #!/usr/bin/env python3
+"""Gemini Spark task queue and synthesis runner.
+
+This daemon synthesizes artifacts. It does not claim physical, C17, competitor-census,
+or numerical verification unless a separate verifier actually runs and produces evidence.
+Local paths are configurable so repository users are not bound to one workstation.
+
+The daemon never performs Git commits. Repository promotion is intentionally delegated to
+an external controller or maintainer so generated artifacts cannot bypass protected-branch
+review by inheriting an ambient checkout target.
 """
-⚡ GEMINI SPARK DAEMON (Slot 02: rajon369963-del)
-Autonomous Task Queue & Interconnection Synthesis Runner
-Bound to: https://github.com/rajon369963-del/sovereign-study-commons-india
-"""
-import os
-import sys
-import glob
 import json
-import time
+import os
 import shutil
 import sqlite3
 import hashlib
-import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO_ROOT = Path("/Users/rajondas/teamwork_projects/sovereign-study-commons-india")
+REPO_ROOT = Path(os.environ.get("SOVEREIGN_COMMONS_ROOT", Path(__file__).resolve().parents[1]))
+AIR1_HOME = Path(os.environ.get("AIR1_HOME", Path.home() / ".air1"))
 QUEUE_DIR = REPO_ROOT / "tasks" / "queue"
 IN_PROGRESS_DIR = REPO_ROOT / "tasks" / "in_progress"
 COMPLETED_DIR = REPO_ROOT / "tasks" / "completed"
 RESEARCH_DIR = REPO_ROOT / "research" / "interconnections"
-SPARK_DB = Path("/Users/rajondas/.air1/SPARK5_TRANSACTION_LEDGER.sqlite")
-POOL_DB = Path("/Users/rajondas/.air1/state/MULTI_ACCOUNT_WORKSPACE_POOL.sqlite")
+SPARK_DB = Path(os.environ.get("SPARK_TRANSACTION_DB", AIR1_HOME / "SPARK5_TRANSACTION_LEDGER.sqlite"))
+POOL_DB = Path(os.environ.get("WORKSPACE_POOL_DB", AIR1_HOME / "state" / "MULTI_ACCOUNT_WORKSPACE_POOL.sqlite"))
+RECEIPT_DIR = Path(os.environ.get("AIR1_RECEIPT_DIR", AIR1_HOME / "receipts"))
+
 
 def ensure_directories():
-    for d in [QUEUE_DIR, IN_PROGRESS_DIR, COMPLETED_DIR, RESEARCH_DIR]:
-        d.mkdir(parents=True, exist_ok=True)
+    for directory in [QUEUE_DIR, IN_PROGRESS_DIR, COMPLETED_DIR, RESEARCH_DIR]:
+        directory.mkdir(parents=True, exist_ok=True)
+
 
 def record_transaction(task_id: str, effect_id: str, object_id: str, result: str, receipt_path: str):
     if not SPARK_DB.exists():
         return
     try:
         conn = sqlite3.connect(str(SPARK_DB))
-        c = conn.cursor()
+        cursor = conn.cursor()
         now = datetime.now(timezone.utc).isoformat()
-        c.execute("""
-            INSERT OR REPLACE INTO transactions 
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO transactions
             (task_id, effect_id, account_id, service, object_id, started_at, committed_at, verifier, result, retry_condition, receipt_path)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (task_id, effect_id, "rajon369963-del", "gemini-spark", object_id, now, now, "Antigravity-C17-Guard", result, "NONE", receipt_path))
+            """,
+            (task_id, effect_id, "rajon369963-del", "gemini-spark", object_id, now, now,
+             "UNVERIFIED", result, "INDEPENDENT_VERIFICATION_REQUIRED", receipt_path),
+        )
         conn.commit()
         conn.close()
-    except Exception as e:
-        print(f"[WARN] Error recording to SPARK DB: {e}")
+    except Exception as exc:
+        print(f"[WARN] Error recording to SPARK DB: {exc}")
 
-def run_git_command(args: list) -> subprocess.CompletedProcess:
-    return subprocess.run(["git"] + args, cwd=REPO_ROOT, capture_output=True, text=True)
 
 def solve_task(task_path: Path) -> Path:
     task_name = task_path.stem
     print(f"[*] Claiming task: {task_name}")
-    
     in_progress_path = IN_PROGRESS_DIR / f"{task_name}_SPARK2.md"
     shutil.move(task_path, in_progress_path)
-    
-    with open(in_progress_path, "r", encoding="utf-8") as f:
-        task_content = f.read()
-        
-    print(f"[*] Processing task objective for: {task_name}...")
+    task_content = in_progress_path.read_text(encoding="utf-8")
     start_time = time.time()
-    
-    # Synthesize solution
-    solution_text = f"""# ⚡ SOLUTION: {task_name}
-> **Processed By**: Gemini Spark Slot 02 (`rajon369963-del`)  
-> **Target Account**: `rajon369963@gmail.com`  
-> **Timestamp**: {datetime.now(timezone.utc).isoformat()}  
-> **Source Grounding**: Google Cloud Project `rajon-mac-bridge-2026`  
 
----
+    solution_text = f"""# SOLUTION DRAFT: {task_name}
+> **Processed By**: Gemini Spark Slot 02 (`rajon369963-del`)
+> **Timestamp**: {datetime.now(timezone.utc).isoformat()}
+> **Verification status**: `SYNTHESIZED_UNVERIFIED`
 
 ## 1. Original Objective
 {task_content}
 
----
+## 2. Synthesis
+This artifact is a generated synthesis for independent review. It does not assert that a
+competitor census, native C17 kernel, hardware acceleration, numerical court, or physical
+verification ran. Any such promotion requires a separate executed verifier with command,
+input artifact, exit status, assertion result, evidence artifact/hash, timestamp, and verifier ID.
 
-## 2. Deep Analytical Derivation & Interconnection
-The problem requirements have been synthesized according to the Sovereign Exam Hierarchy (UPSC ESE / GATE EE baseline).
-- **Core Principle**: First-principles physical derivation with ARM64 NEON acceleration invariants.
-- **Interconnection of Interconnections ($IC^2$)**: Cross-referenced against 100 historical competitor patterns and verified via native C17 kernels.
-- **Verification Hash**: SHA-256 integrity asserted.
-
----
-
-## 3. Verification Receipt
-- Status: **PASSED_PHYSICAL_VERIFICATION**
-- Execution Duration: {(time.time() - start_time)*1000:.2f} ms
-- Executor: `Gemini-Spark-A02`
+## 3. Receipt
+- Status: **SYNTHESIZED_UNVERIFIED**
+- Synthesis duration: {(time.time() - start_time) * 1000:.2f} ms
+- Producer: `Gemini-Spark-A02`
 """
     solution_path = COMPLETED_DIR / f"{task_name}_SOLUTION.md"
-    with open(solution_path, "w", encoding="utf-8") as f:
-        f.write(solution_text)
-        
+    solution_path.write_text(solution_text, encoding="utf-8")
+
     sha256 = hashlib.sha256(solution_text.encode("utf-8")).hexdigest()
-    receipt_dir = Path("/Users/rajondas/.air1/receipts")
-    receipt_dir.mkdir(parents=True, exist_ok=True)
-    receipt_path = receipt_dir / f"{task_name}_receipt.json"
-    with open(receipt_path, "w") as f:
-        json.dump({
-            "task_id": task_name,
-            "account": "rajon369963-del",
-            "sha256": sha256,
-            "status": "COMPLETED",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }, f, indent=2)
-        
-    record_transaction(task_name, f"EFF-SPARK-{task_name}", str(solution_path), "SUCCESS_PHYSICAL", str(receipt_path))
-    
-    # Remove in_progress marker
+    RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
+    receipt_path = RECEIPT_DIR / f"{task_name}_receipt.json"
+    receipt_path.write_text(json.dumps({
+        "task_id": task_name,
+        "account": "rajon369963-del",
+        "artifact_sha256": sha256,
+        "status": "SYNTHESIZED_UNVERIFIED",
+        "verification": {"executed": False, "verifier_id": None, "evidence": None},
+        "promotion": {
+            "git_commit_attempted": False,
+            "route": "EXTERNAL_CONTROLLER_OR_MAINTAINER_PR",
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }, indent=2), encoding="utf-8")
+    record_transaction(task_name, f"EFF-SPARK-{task_name}", str(solution_path),
+                       "SYNTHESIZED_UNVERIFIED", str(receipt_path))
     if in_progress_path.exists():
         in_progress_path.unlink()
-        
-    print(f"[✔] Successfully completed {task_name} -> {solution_path}")
+    print(f"[OK] Synthesized {task_name} -> {solution_path}; independent verification required")
     return solution_path
+
 
 def generate_hourly_interconnection() -> Path:
     ts = int(time.time())
     inter_path = RESEARCH_DIR / f"INTERCONNECTION_{ts}.md"
-    content = f"""# 🧠 Sovereign Hourly Research Interconnection #{ts}
-> **Generated By**: Gemini Spark Slot 02 (`rajon369963-del`)  
-> **Timestamp**: {datetime.now(timezone.utc).isoformat()}  
+    content = f"""# Hourly Research Interconnection #{ts}
+> **Generated By**: Gemini Spark Slot 02 (`rajon369963-del`)
+> **Timestamp**: {datetime.now(timezone.utc).isoformat()}
+> **Status**: `SYNTHESIZED_UNVERIFIED`
 
-## Synthesis Topic: Dynamic Electromagnetic Interconnection
-- **Grandfather Derivation**: UPSC ESE Mains Multi-Stage Field Equations.
-- **Hyper-Interconnection**: Connecting Transformer inrush current dynamics ($I_{{max}} \\approx 2 I_m$) with Synchronous Machine sub-transient direct-axis reactance ($X''_d$).
-- **Sovereign Invariant**: Zero numerical drift, verified via Apple Silicon Accelerate.framework.
+## Candidate synthesis
+Explore a possible relationship between transformer inrush-current dynamics and synchronous-machine
+sub-transient reactance. This is a research hypothesis, not a verified invariant. Validate equations,
+assumptions, sources, units, and numerical behavior independently before promotion.
 """
-    with open(inter_path, "w", encoding="utf-8") as f:
-        f.write(content)
-        
-    record_transaction(f"INTER-{ts}", f"EFF-RESEARCH-{ts}", str(inter_path), "HOURLY_RESEARCH_ADDED", str(inter_path))
-    print(f"[✔] Generated hourly interconnection: {inter_path}")
+    inter_path.write_text(content, encoding="utf-8")
+    record_transaction(f"INTER-{ts}", f"EFF-RESEARCH-{ts}", str(inter_path),
+                       "SYNTHESIZED_UNVERIFIED", str(inter_path))
+    print(f"[OK] Generated unverified research candidate: {inter_path}")
     return inter_path
+
 
 def run_cycle():
     ensure_directories()
     pending_tasks = sorted(list(QUEUE_DIR.glob("*.md")) + list(QUEUE_DIR.glob("*.json")))
-    
     if pending_tasks:
-        for t in pending_tasks:
-            solve_task(t)
-        # Git commit completed tasks
-        run_git_command(["add", "tasks/", "research/"])
-        run_git_command(["commit", "-m", "feat(spark-cortex): autonomously execute queued tasks via Slot 02"])
+        for task in pending_tasks:
+            solve_task(task)
     else:
-        print("[*] No pending tasks in queue. Generating hourly research interconnection...")
-        inter_path = generate_hourly_interconnection()
-        run_git_command(["add", str(inter_path)])
-        run_git_command(["commit", "-m", "docs(research): add autonomous hourly interconnection analysis"])
-        
-    # Update pool state
+        generate_hourly_interconnection()
+
+    # Intentionally no `git add` or `git commit` here. Generated files remain local artifacts
+    # until an external controller/maintainer places them on an explicit work branch and sends
+    # them through the repository's normal PR + required-check review path.
+    print("[HOLD] Repository promotion delegated to external controller/maintainer PR workflow")
+
     if POOL_DB.exists():
         try:
             conn = sqlite3.connect(str(POOL_DB))
-            c = conn.cursor()
-            c.execute("UPDATE accounts SET last_used_timestamp = ?, total_requests_served = total_requests_served + 1 WHERE slot_number = 2", (time.time(),))
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE accounts SET last_used_timestamp = ?, total_requests_served = total_requests_served + 1 WHERE slot_number = 2",
+                (time.time(),),
+            )
             conn.commit()
             conn.close()
-        except Exception as e:
-            print(f"[WARN] Error updating pool: {e}")
+        except Exception as exc:
+            print(f"[WARN] Error updating pool: {exc}")
+
 
 if __name__ == "__main__":
     run_cycle()
