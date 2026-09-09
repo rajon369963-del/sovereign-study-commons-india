@@ -2,12 +2,6 @@ name: Data integrity
 
 on:
   pull_request:
-    paths:
-      - 'data_lake/**'
-      - 'scripts/repair_fts_sync.py'
-      - 'scripts/canonicalize.py'
-      - 'ci/requirements-data-integrity.txt'
-      - '.github/workflows/data-integrity.yml'
   push:
     branches: [main]
     paths:
