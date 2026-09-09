@@ -2,7 +2,7 @@
 
 > भारत के छात्रों के लिए a public, open study-data commons. Repository truth is strictly preferred over intended future state.
 
-## Live truth status — verified 9 Sep 2026
+## Live truth status — verified 10 Sep 2026
 
 Every operational and dataset claim is explicitly classified:
 
@@ -11,7 +11,7 @@ Every operational and dataset claim is explicitly classified:
 - **`[VERIFIED]` Integrity CI automation:** `.github/workflows/data-integrity.yml` and `.github/workflows/sha256-idempotency-canary.yml` are active on the default branch. These are bounded integrity checks; they do not prove persistent semantic-identity migration or learner value.
 - **`[VERIFIED_BOUNDED]` Real DuckDB CLI regression:** `.github/workflows/duckdb-cli-smoke.yml` installs the pinned DuckDB CLI `1.5.5`, verifies the downloaded archive SHA-256, and runs `scripts/test_duckdb_smoke_test.py` against committed Parquet assets on relevant pull requests/pushes. A successful run proves this bounded CLI/query path, not dataset provenance, redistribution rights, hub parity, or learner value.
 - **`[VERIFIED_BOUNDED]` Public Pages endpoint smoke:** `.github/workflows/pages-endpoint-smoke.yml` has physically executed an unauthenticated external GET from GitHub Actions and passed HTTP 200, the stable `Sovereign Study Commons India` title marker, and stale unsafe-marker rejection. This proves bounded endpoint reachability/content truth only, **not** browser E2E, mobile/accessibility, JavaScript interaction correctness, or learner value.
-- **`[VERIFIED_BOUNDED]` Pages periodic freshness:** the existing 6-hour schedule physically executed as a real `schedule` event on default-branch SHA `6392f726e84cea44716a5f1c1a5c9f8c44740f03`; the public-endpoint job and its endpoint assertions succeeded. This is bounded periodic-freshness evidence for that SHA only, not an SLA or permanent freshness guarantee; a later `main` change requires a newer scheduled success before freshness is promoted again.
+- **`[HISTORICAL_PASS_BOUNDED / CURRENT_STALE]` Pages periodic freshness:** the 6-hour schedule physically executed as a real `schedule` event on default-branch SHA `6392f726e84cea44716a5f1c1a5c9f8c44740f03`, and that scheduled endpoint check succeeded. `main` later advanced to `a1a9f48a1fa9bb7cda3756f982f3885269f66549`, so current-main periodic freshness is **STALE/PENDING_NEW_SCHEDULE** until a newer genuine scheduled run succeeds on the then-current SHA. The historical pass proves the bounded schedule mechanism, not an SLA or permanent freshness.
 - **`[VERIFIED]` Review-only intake boundary:** default-branch repository bytes contain the evidence-first bug/data-integrity/provenance Issue Form plus the lecture-review form. Issue-form structure is submission-time structure, not immutable evidence; real triage usefulness remains unvalidated until external traffic exists.
 - **`[STAGED]` Harvest & Hugging Face automation:** `workflows_template/auto_harvest_and_hf_sync.yml` remains a **staged template**, not an active GitHub Actions workflow.
 - **`[UNVERIFIED]` Remote Hugging Face sync:** live automated syncing to Hugging Face datasets remains unverified until end-to-end authenticated upload, readback, and hash parity succeed.
