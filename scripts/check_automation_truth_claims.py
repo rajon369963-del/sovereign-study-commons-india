@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Fail closed on known fabricated automation truth semantics.
+"""Fail closed on unsupported automation truth promotions.
 
 This deterministic lint is a claim-registration guard, not a factual verifier.
-A VERIFIED_<N>_* or verified-count promotion is allowed only when it is explicitly
-registered in a reviewable manifest with a matching count and existing evidence paths.
+A VERIFIED_<N>_* token or verified-count prose promotion is allowed only when a
+reviewable manifest binds that claim to a matching count, item locators, local
+evidence paths, a source revision, a generation timestamp, and an explicit
+verifier boundary.
 """
+from datetime import datetime
 from pathlib import Path
 import json
 import re
@@ -14,11 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "automation_truth_claim_manifest.json"
 SELF = Path(__file__).resolve()
 
-SCAN_ROOTS = [
-    ROOT / "scripts",
-    ROOT / ".agents",
-    ROOT / ".github" / "workflows",
-]
+SCAN_ROOTS = [ROOT / "scripts", ROOT / ".agents", ROOT / ".github" / "workflows"]
 TOP_LEVEL_SURFACES = [ROOT / "README.md", ROOT / "ROADMAP.md"]
 TEXT_SUFFIXES = {".py", ".md", ".yml", ".yaml", ".json", ".txt", ".toml"}
 
@@ -29,6 +28,15 @@ FORBIDDEN = {
     "Cross-referenced against 100 historical competitor patterns": "completed competitor-census claim without a manifest",
     "Multi-Account Quota Harvester": "quota-evasion framing",
 }
+
+# Bounded aliases of the same historical false-green status family. These are
+# deliberately token/status shaped rather than fuzzy prose, to avoid policing
+# ordinary contributor discussion.
+FORBIDDEN_STATUS_RE = re.compile(
+    r"\b(?:PASSED?|SUCCESS|SUCCESSFUL|VERIFIED|VALIDATED|CONFIRMED)[_-]PHYSICAL(?:[_-]VERIFICATION)?\b"
+    r"|\bPHYSICAL[_-](?:PASS(?:ED)?|SUCCESS|VERIFIED|VALIDATED|CONFIRMED)\b",
+    re.IGNORECASE,
+)
 
 REQUIRED = {
     ROOT / "scripts" / "gemini_spark_daemon.py": [
@@ -54,6 +62,17 @@ VERIFIED_PROSE_RE = re.compile(
     r"(?:competitors?|practitioner\s+insights?|reusable\s+wheels?|hacks?|tips?|tricks?)\b",
     re.IGNORECASE,
 )
+FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+
+
+def _valid_rfc3339(value):
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return "T" in value
 
 
 def load_manifest(errors):
@@ -65,39 +84,91 @@ def load_manifest(errors):
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"invalid automation truth manifest: {exc}")
         return {}, {}
+
     claims = payload.get("claims")
-    if payload.get("version") != 1 or not isinstance(claims, list):
-        errors.append("manifest must contain version=1 and claims=[]")
+    if payload.get("version") != 2 or not isinstance(claims, list):
+        errors.append("manifest must contain version=2 and claims=[]")
         return {}, {}
+
     by_token, by_phrase = {}, {}
     for i, claim in enumerate(claims):
         if not isinstance(claim, dict):
             errors.append(f"manifest claim[{i}] must be an object")
             continue
+
         token = claim.get("token")
         phrase = claim.get("phrase")
-        count = claim.get("count")
+        family = claim.get("claim_family")
+        expected_count = claim.get("expected_count")
+        actual_count = claim.get("actual_item_count")
+        item_locators = claim.get("item_locators")
         evidence_paths = claim.get("evidence_paths")
-        if not isinstance(count, int) or count < 0:
-            errors.append(f"manifest claim[{i}] has invalid count")
+        source_revision = claim.get("source_revision")
+        generated_at = claim.get("generated_at")
+        verifier_boundary = claim.get("verifier_boundary")
+
+        if not isinstance(family, str) or not family.strip():
+            errors.append(f"manifest claim[{i}] requires claim_family")
+        if not isinstance(expected_count, int) or expected_count < 0:
+            errors.append(f"manifest claim[{i}] has invalid expected_count")
             continue
+        if not isinstance(actual_count, int) or actual_count < 0:
+            errors.append(f"manifest claim[{i}] has invalid actual_item_count")
+            continue
+        if actual_count != expected_count:
+            errors.append(f"manifest claim[{i}] expected_count != actual_item_count")
+        if not isinstance(item_locators, list) or len(item_locators) != actual_count:
+            errors.append(f"manifest claim[{i}] item_locators length must equal actual_item_count")
+        elif any(not isinstance(locator, str) or not locator.strip() for locator in item_locators):
+            errors.append(f"manifest claim[{i}] item_locators must be non-empty strings")
+        elif len(set(item_locators)) != len(item_locators):
+            errors.append(f"manifest claim[{i}] item_locators must be unique")
+
         if not isinstance(evidence_paths, list) or not evidence_paths:
             errors.append(f"manifest claim[{i}] requires non-empty evidence_paths")
-            continue
-        for rel in evidence_paths:
-            if not isinstance(rel, str) or not (ROOT / rel).is_file():
-                errors.append(f"manifest claim[{i}] evidence path missing: {rel!r}")
+        else:
+            for rel in evidence_paths:
+                if not isinstance(rel, str) or not rel.strip():
+                    errors.append(f"manifest claim[{i}] has invalid evidence path: {rel!r}")
+                    continue
+                candidate = (ROOT / rel).resolve()
+                try:
+                    candidate.relative_to(ROOT.resolve())
+                except ValueError:
+                    errors.append(f"manifest claim[{i}] evidence path escapes repository: {rel!r}")
+                    continue
+                if not candidate.is_file():
+                    errors.append(f"manifest claim[{i}] evidence path missing: {rel!r}")
+
+        if not isinstance(source_revision, str) or not FULL_SHA_RE.fullmatch(source_revision):
+            errors.append(f"manifest claim[{i}] source_revision must be a full 40-hex commit SHA")
+        if not _valid_rfc3339(generated_at):
+            errors.append(f"manifest claim[{i}] generated_at must be RFC3339-like date-time")
+        if not isinstance(verifier_boundary, str) or not verifier_boundary.strip():
+            errors.append(f"manifest claim[{i}] requires verifier_boundary")
+
         if token:
+            match = VERIFIED_TOKEN_RE.fullmatch(token)
+            if not match:
+                errors.append(f"manifest claim[{i}] token is not VERIFIED_<N>_*: {token!r}")
+            elif int(match.group(1)) != expected_count:
+                errors.append(f"manifest claim[{i}] token count disagrees with expected_count")
             if token in by_token:
                 errors.append(f"duplicate manifest token: {token}")
             by_token[token] = claim
         if phrase:
+            match = VERIFIED_PROSE_RE.fullmatch(phrase)
+            if not match:
+                errors.append(f"manifest claim[{i}] phrase is outside bounded verified-count grammar: {phrase!r}")
+            elif int(match.group(1)) != expected_count:
+                errors.append(f"manifest claim[{i}] phrase count disagrees with expected_count")
             key = phrase.casefold()
             if key in by_phrase:
                 errors.append(f"duplicate manifest phrase: {phrase}")
             by_phrase[key] = claim
         if not token and not phrase:
             errors.append(f"manifest claim[{i}] needs token or phrase")
+
     return by_token, by_phrase
 
 
@@ -139,19 +210,21 @@ def main() -> int:
         for needle, reason in FORBIDDEN.items():
             if needle in text:
                 errors.append(f"{rel} contains forbidden {needle!r}: {reason}")
+        for match in FORBIDDEN_STATUS_RE.finditer(text):
+            errors.append(f"{rel} contains forbidden physical-status alias {match.group(0)!r}")
         for match in VERIFIED_TOKEN_RE.finditer(text):
             token, count_text = match.group(0), match.group(1)
             claim = by_token.get(token)
             if claim is None:
                 errors.append(f"{rel} contains unmanifested verified-count token {token!r}")
-            elif claim["count"] != int(count_text):
+            elif claim["expected_count"] != int(count_text):
                 errors.append(f"{rel} token {token!r} count disagrees with manifest")
         for match in VERIFIED_PROSE_RE.finditer(text):
             phrase, count_text = match.group(0), match.group(1)
             claim = by_phrase.get(phrase.casefold())
             if claim is None:
                 errors.append(f"{rel} contains unmanifested verified-count phrase {phrase!r}")
-            elif claim["count"] != int(count_text):
+            elif claim["expected_count"] != int(count_text):
                 errors.append(f"{rel} phrase {phrase!r} count disagrees with manifest")
 
     if errors:
@@ -161,7 +234,7 @@ def main() -> int:
         return 1
 
     print("AUTOMATION_TRUTH_LINT=PASS_BOUNDED")
-    print("Scope: deterministic claim-registration hygiene; semantic/physical correctness remains separately verified.")
+    print("Scope: deterministic claim-registration hygiene; manifest/path consistency is not factual verification.")
     return 0
 
 
