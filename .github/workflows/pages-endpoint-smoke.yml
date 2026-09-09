@@ -26,9 +26,10 @@ jobs:
           printf 'event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s\n' "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
           grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
           test "$code" = '200'
-          grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
+          # NEGATIVE FIXTURE ONLY: deliberately impossible marker; this branch must fail and must never merge.
+          grep -Fq '<title>ISSUE47_NEGATIVE_FIXTURE_MUST_NOT_EXIST</title>' "$body"
           if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
             echo 'stale unsafe verification marker detected on public endpoint' >&2
             exit 1
           fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED repo_sha=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$url" "$code" 'Universal Sovereign Study Lake title'
+          printf 'PUBLIC_ENDPOINT_VERIFIED repo_sha=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$url" "$code" 'NEGATIVE_FIXTURE_MUST_NOT_PASS'
