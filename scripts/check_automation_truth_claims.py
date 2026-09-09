@@ -2,8 +2,8 @@
 """Fail closed on unsupported automation truth promotions.
 
 This deterministic lint is a claim-registration guard, not a factual verifier.
-A VERIFIED_<N>_* token or verified-count prose promotion is allowed only when a
-reviewable manifest binds that claim to a matching count, item locators, local
+A bounded verified-count token/prose promotion is allowed only when a reviewable
+manifest binds that exact claim to a matching count, item locators, local
 evidence paths, a source revision, a generation timestamp, and an explicit
 verifier boundary.
 """
@@ -56,13 +56,50 @@ REQUIRED = {
     ],
 }
 
-VERIFIED_TOKEN_RE = re.compile(r"\bVERIFIED_(\d+)_([A-Z0-9_]+)\b")
-VERIFIED_PROSE_RE = re.compile(
-    r"\b(?:verified|validated|confirmed)\s+(\d+)\s+"
-    r"(?:competitors?|practitioner\s+insights?|reusable\s+wheels?|hacks?|tips?|tricks?)\b",
-    re.IGNORECASE,
-)
+COUNT_TEXT = r"(?:\d+|one(?:\s+|-)hundred)"
+FAMILY_TEXT = r"(?:competitors?|practitioner\s+insights?|reusable\s+wheels?|hacks?|tips?|tricks?)"
+VERIFIED_TOKEN_RES = [
+    re.compile(r"\bVERIFIED_(\d+)_([A-Z0-9_]+)\b"),
+    re.compile(r"\bVERIFIED-(\d+)-([A-Z0-9-]+)\b", re.IGNORECASE),
+]
+VERIFIED_PROSE_RES = [
+    # Canonical and adverb-inserted prefix forms, including word-number 100.
+    re.compile(
+        rf"\b(?:verified|validated|confirmed)(?:\s+exactly)?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
+        re.IGNORECASE,
+    ),
+    # Reordered form: `100 competitors verified` / `one hundred competitors confirmed`.
+    re.compile(
+        rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?(?:verified|validated|confirmed)\b",
+        re.IGNORECASE,
+    ),
+]
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+
+
+def _count_value(text):
+    if text.isdigit():
+        return int(text)
+    normalized = re.sub(r"[-\s]+", " ", text.strip().casefold())
+    if normalized == "one hundred":
+        return 100
+    return None
+
+
+def _token_count(token):
+    for regex in VERIFIED_TOKEN_RES:
+        match = regex.fullmatch(token)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _phrase_count(phrase):
+    for regex in VERIFIED_PROSE_RES:
+        match = regex.fullmatch(phrase)
+        if match:
+            return _count_value(match.group(1))
+    return None
 
 
 def _valid_rfc3339(value):
@@ -148,19 +185,20 @@ def load_manifest(errors):
             errors.append(f"manifest claim[{i}] requires verifier_boundary")
 
         if token:
-            match = VERIFIED_TOKEN_RE.fullmatch(token)
-            if not match:
-                errors.append(f"manifest claim[{i}] token is not VERIFIED_<N>_*: {token!r}")
-            elif int(match.group(1)) != expected_count:
+            token_count = _token_count(token)
+            if token_count is None:
+                errors.append(f"manifest claim[{i}] token is outside bounded VERIFIED count grammar: {token!r}")
+            elif token_count != expected_count:
                 errors.append(f"manifest claim[{i}] token count disagrees with expected_count")
-            if token in by_token:
+            key = token.casefold()
+            if key in by_token:
                 errors.append(f"duplicate manifest token: {token}")
-            by_token[token] = claim
+            by_token[key] = claim
         if phrase:
-            match = VERIFIED_PROSE_RE.fullmatch(phrase)
-            if not match:
+            phrase_count = _phrase_count(phrase)
+            if phrase_count is None:
                 errors.append(f"manifest claim[{i}] phrase is outside bounded verified-count grammar: {phrase!r}")
-            elif int(match.group(1)) != expected_count:
+            elif phrase_count != expected_count:
                 errors.append(f"manifest claim[{i}] phrase count disagrees with expected_count")
             key = phrase.casefold()
             if key in by_phrase:
@@ -212,20 +250,23 @@ def main() -> int:
                 errors.append(f"{rel} contains forbidden {needle!r}: {reason}")
         for match in FORBIDDEN_STATUS_RE.finditer(text):
             errors.append(f"{rel} contains forbidden physical-status alias {match.group(0)!r}")
-        for match in VERIFIED_TOKEN_RE.finditer(text):
-            token, count_text = match.group(0), match.group(1)
-            claim = by_token.get(token)
-            if claim is None:
-                errors.append(f"{rel} contains unmanifested verified-count token {token!r}")
-            elif claim["expected_count"] != int(count_text):
-                errors.append(f"{rel} token {token!r} count disagrees with manifest")
-        for match in VERIFIED_PROSE_RE.finditer(text):
-            phrase, count_text = match.group(0), match.group(1)
-            claim = by_phrase.get(phrase.casefold())
-            if claim is None:
-                errors.append(f"{rel} contains unmanifested verified-count phrase {phrase!r}")
-            elif claim["expected_count"] != int(count_text):
-                errors.append(f"{rel} phrase {phrase!r} count disagrees with manifest")
+        for regex in VERIFIED_TOKEN_RES:
+            for match in regex.finditer(text):
+                token, count_text = match.group(0), match.group(1)
+                claim = by_token.get(token.casefold())
+                if claim is None:
+                    errors.append(f"{rel} contains unmanifested verified-count token {token!r}")
+                elif claim["expected_count"] != int(count_text):
+                    errors.append(f"{rel} token {token!r} count disagrees with manifest")
+        for regex in VERIFIED_PROSE_RES:
+            for match in regex.finditer(text):
+                phrase, count_text = match.group(0), match.group(1)
+                count = _count_value(count_text)
+                claim = by_phrase.get(phrase.casefold())
+                if claim is None:
+                    errors.append(f"{rel} contains unmanifested verified-count phrase {phrase!r}")
+                elif claim["expected_count"] != count:
+                    errors.append(f"{rel} phrase {phrase!r} count disagrees with manifest")
 
     if errors:
         print("AUTOMATION_TRUTH_LINT=FAIL")
