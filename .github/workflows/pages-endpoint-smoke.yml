@@ -1,0 +1,31 @@
+name: Pages endpoint smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/pages-endpoint-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-endpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify unauthenticated Pages endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
+          body="$(mktemp)"
+          headers="$(mktemp)"
+          code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --dump-header "$headers" --output "$body" --write-out '%{http_code}' "$url")"
+          test "$code" = '200'
+          grep -Fq 'Sovereign Study Commons India' "$body"
+          if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
+            echo 'stale unsafe verification marker detected on public endpoint' >&2
+            exit 1
+          fi
+          printf 'PUBLIC_ENDPOINT_VERIFIED url=%s http=%s marker=%s\n' "$url" "$code" 'Sovereign Study Commons India'
