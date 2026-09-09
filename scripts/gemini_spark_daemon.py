@@ -4,13 +4,16 @@
 This daemon synthesizes artifacts. It does not claim physical, C17, competitor-census,
 or numerical verification unless a separate verifier actually runs and produces evidence.
 Local paths are configurable so repository users are not bound to one workstation.
+
+The daemon never performs Git commits. Repository promotion is intentionally delegated to
+an external controller or maintainer so generated artifacts cannot bypass protected-branch
+review by inheriting an ambient checkout target.
 """
 import json
 import os
 import shutil
 import sqlite3
 import hashlib
-import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,10 +56,6 @@ def record_transaction(task_id: str, effect_id: str, object_id: str, result: str
         print(f"[WARN] Error recording to SPARK DB: {exc}")
 
 
-def run_git_command(args: list) -> subprocess.CompletedProcess:
-    return subprocess.run(["git"] + args, cwd=REPO_ROOT, capture_output=True, text=True)
-
-
 def solve_task(task_path: Path) -> Path:
     task_name = task_path.stem
     print(f"[*] Claiming task: {task_name}")
@@ -96,6 +95,10 @@ input artifact, exit status, assertion result, evidence artifact/hash, timestamp
         "artifact_sha256": sha256,
         "status": "SYNTHESIZED_UNVERIFIED",
         "verification": {"executed": False, "verifier_id": None, "evidence": None},
+        "promotion": {
+            "git_commit_attempted": False,
+            "route": "EXTERNAL_CONTROLLER_OR_MAINTAINER_PR",
+        },
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }, indent=2), encoding="utf-8")
     record_transaction(task_name, f"EFF-SPARK-{task_name}", str(solution_path),
@@ -132,12 +135,13 @@ def run_cycle():
     if pending_tasks:
         for task in pending_tasks:
             solve_task(task)
-        run_git_command(["add", "tasks/", "research/"])
-        run_git_command(["commit", "-m", "feat(spark-cortex): synthesize queued tasks for independent verification"])
     else:
-        inter_path = generate_hourly_interconnection()
-        run_git_command(["add", str(inter_path.relative_to(REPO_ROOT))])
-        run_git_command(["commit", "-m", "docs(research): add unverified interconnection candidate"])
+        generate_hourly_interconnection()
+
+    # Intentionally no `git add` or `git commit` here. Generated files remain local artifacts
+    # until an external controller/maintainer places them on an explicit work branch and sends
+    # them through the repository's normal PR + required-check review path.
+    print("[HOLD] Repository promotion delegated to external controller/maintainer PR workflow")
 
     if POOL_DB.exists():
         try:
