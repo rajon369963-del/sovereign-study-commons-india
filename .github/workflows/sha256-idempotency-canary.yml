@@ -2,10 +2,6 @@ name: SHA256 idempotency canary
 
 on:
   pull_request:
-    paths:
-      - 'data_lake/sqlite/**'
-      - 'scripts/prove_sha256_idempotency.py'
-      - '.github/workflows/sha256-idempotency-canary.yml'
   push:
     branches: [main]
     paths:
