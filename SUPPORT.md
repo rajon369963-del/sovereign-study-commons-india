@@ -8,6 +8,12 @@ Open the **Report bug, data-integrity, or provenance defect** form when you can 
 
 For proposing a public educational YouTube playlist or video, use the existing **Propose Lecture Playlist / Video for Review** form. Submission is a review request only; it does not promise automatic ingestion or republication.
 
+### Evidence durability boundary
+
+GitHub Issue Form requirements structure the report at submission time; they do not make the resulting issue body immutable. A contributor can edit the issue afterward. Before accepting a report as proof-carrying, reviewers should re-check that the minimal reproduction, expected/observed behavior, show-your-work evidence, provenance context, environment/version, and privacy/content-safety confirmations are still present and internally consistent. If required evidence was removed or materially changed, treat the report as incomplete until the evidence is restored or independently reproduced.
+
+Do not add a bot merely to lock or rewrite issue bodies. Add automation only if real issue traffic later demonstrates a measurable abuse or triage-pressure problem that native GitHub controls and reviewer checks cannot handle safely.
+
 ## Questions and general help
 
 Before opening an issue, check the README and CONTRIBUTING guidance. If you do not yet have a reproducible defect, do not fabricate logs or force a bug report. Keep the question until you can point to a concrete repository artifact, documented behavior, or public evidence. GitHub Discussions is intentionally not enabled at the current verified support volume.
