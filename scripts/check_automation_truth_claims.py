@@ -70,7 +70,7 @@ VERIFIED_PROSE_RES = [
         re.IGNORECASE,
     ),
     re.compile(
-        rf"\b(?:all\s+)?({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:(?:were|are)\s+(?:all\s+)?|have\s+(?:all\s+)?been\s+)?{STATUS_ADVERB_TEXT}{STATUS_TEXT}\b",
+        rf"\b(?:all\s+)?({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:(?:were|are)\s+(?:all\s+)?|have\s+(?:(?:all\s+)?been\s+{STATUS_ADVERB_TEXT}|(?:independently|fully)\s+been\s+))?{STATUS_TEXT}\b",
         re.IGNORECASE,
     ),
     re.compile(
