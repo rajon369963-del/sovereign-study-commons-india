@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
 import re
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -161,6 +162,20 @@ def _valid_rfc3339(value):
     return parsed.astimezone(timezone.utc) <= datetime.now(timezone.utc) + MAX_FUTURE_SKEW
 
 
+def _checked_revision():
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    revision = result.stdout.strip()
+    return revision.lower() if FULL_SHA_RE.fullmatch(revision) else None
+
+
 def load_manifest(errors):
     if not MANIFEST.is_file():
         errors.append("missing automation_truth_claim_manifest.json")
@@ -176,6 +191,7 @@ def load_manifest(errors):
         errors.append("manifest must contain version=2 and claims=[]")
         return {}, {}
 
+    checked_revision = _checked_revision() if claims else None
     by_token, by_phrase = {}, {}
     for i, claim in enumerate(claims):
         if not isinstance(claim, dict):
@@ -231,6 +247,12 @@ def load_manifest(errors):
 
         if not isinstance(source_revision, str) or not FULL_SHA_RE.fullmatch(source_revision):
             errors.append(f"manifest claim[{i}] source_revision must be a full 40-hex commit SHA")
+        elif checked_revision is None:
+            errors.append(f"manifest claim[{i}] cannot verify source_revision because checked repository revision is unavailable")
+        elif source_revision.casefold() != checked_revision:
+            errors.append(
+                f"manifest claim[{i}] source_revision must equal checked repository revision {checked_revision}"
+            )
         if not _valid_rfc3339(generated_at):
             errors.append(f"manifest claim[{i}] generated_at must be timezone-aware RFC3339 and not materially future-dated")
         if not isinstance(verifier_boundary, str) or not verifier_boundary.strip():
