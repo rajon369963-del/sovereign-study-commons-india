@@ -18,9 +18,14 @@ Every operational and dataset claim is explicitly classified:
 
 ## Try it now (< 60 seconds)
 
-Prerequisites: `python3` and the DuckDB CLI must already be available in `PATH`. Then run these three local verification commands; they do not upload data or require a hosted service:
+Prerequisites: `python3` and the DuckDB CLI must already be available in `PATH`. The repository's bounded CI court is pinned to DuckDB CLI **`1.5.5`**. Before treating a local result as CI-equivalent, run `duckdb --version`: version `1.5.5` is **`EXACT_CI_VERSION_REPRODUCTION`**; any other version is an **`OTHER_VERSION_COMPATIBILITY_PROBE`** and remains **`COMPATIBILITY_UNVERIFIED`** relative to the CI-tested path.
+
+Then run these three local verification commands; they do not upload data or require a hosted service:
 
 ```bash
+# 0. Record the local DuckDB version and claim scope
+duckdb --version
+
 # 1. Run DuckDB smoke queries against committed Parquet assets
 ./scripts/duckdb_smoke_test.sh
 
@@ -37,6 +42,8 @@ To regression-test DuckDB CLI detection and query-error handling (requires `pyth
 python3 scripts/test_duckdb_smoke_test.py
 ```
 
+A successful run on a different DuckDB version is useful compatibility evidence, but it must not be reported as reproducing the pinned `1.5.5` CI court unless the exact version boundary is satisfied.
+
 ## Quick local query (DuckDB)
 
 If you have DuckDB installed, query a local Parquet artifact directly:
@@ -47,7 +54,7 @@ FROM 'data_lake/parquet/universal_study_lake.parquet'
 GROUP BY exam_branch;
 ```
 
-This command is intentionally local and reproducible; it does not depend on remote endpoints.
+This command is intentionally local and reproducible; it does not depend on remote endpoints. Its result inherits the same version scope above: only DuckDB CLI `1.5.5` is CI-equivalent evidence; other versions are compatibility probes.
 
 ## Cockpit
 
