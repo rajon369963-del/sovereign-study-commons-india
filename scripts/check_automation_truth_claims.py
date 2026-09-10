@@ -176,6 +176,21 @@ def _checked_revision():
     return revision.lower() if FULL_SHA_RE.fullmatch(revision) else None
 
 
+def _evidence_matches_revision(source_revision, rel_path, candidate):
+    """Return True only when current evidence bytes equal the path at source_revision."""
+    try:
+        canonical_rel = candidate.relative_to(ROOT.resolve()).as_posix()
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), "show", f"{source_revision}:{canonical_rel}"],
+            check=True,
+            capture_output=True,
+        )
+        current_bytes = candidate.read_bytes()
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return False
+    return current_bytes == result.stdout
+
+
 def load_manifest(errors):
     if not MANIFEST.is_file():
         errors.append("missing automation_truth_claim_manifest.json")
@@ -229,6 +244,16 @@ def load_manifest(errors):
         elif len(set(item_locators)) != len(item_locators):
             errors.append(f"manifest claim[{i}] item_locators must be unique")
 
+        source_revision_valid = isinstance(source_revision, str) and FULL_SHA_RE.fullmatch(source_revision) is not None
+        if not source_revision_valid:
+            errors.append(f"manifest claim[{i}] source_revision must be a full 40-hex commit SHA")
+        elif checked_revision is None:
+            errors.append(f"manifest claim[{i}] cannot verify source_revision because checked repository revision is unavailable")
+        elif source_revision.casefold() != checked_revision:
+            errors.append(
+                f"manifest claim[{i}] source_revision must equal checked repository revision {checked_revision}"
+            )
+
         if not isinstance(evidence_paths, list) or not evidence_paths:
             errors.append(f"manifest claim[{i}] requires non-empty evidence_paths")
         else:
@@ -244,15 +269,12 @@ def load_manifest(errors):
                     continue
                 if not candidate.is_file():
                     errors.append(f"manifest claim[{i}] evidence path missing: {rel!r}")
+                    continue
+                if source_revision_valid and not _evidence_matches_revision(source_revision, rel, candidate):
+                    errors.append(
+                        f"manifest claim[{i}] evidence path bytes do not match source_revision: {rel!r}"
+                    )
 
-        if not isinstance(source_revision, str) or not FULL_SHA_RE.fullmatch(source_revision):
-            errors.append(f"manifest claim[{i}] source_revision must be a full 40-hex commit SHA")
-        elif checked_revision is None:
-            errors.append(f"manifest claim[{i}] cannot verify source_revision because checked repository revision is unavailable")
-        elif source_revision.casefold() != checked_revision:
-            errors.append(
-                f"manifest claim[{i}] source_revision must equal checked repository revision {checked_revision}"
-            )
         if not _valid_rfc3339(generated_at):
             errors.append(f"manifest claim[{i}] generated_at must be timezone-aware RFC3339 and not materially future-dated")
         if not isinstance(verifier_boundary, str) or not verifier_boundary.strip():
