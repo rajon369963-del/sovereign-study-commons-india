@@ -7,7 +7,7 @@ manifest binds that exact claim to a matching count, item locators, local
 evidence paths, a source revision, a generation timestamp, and an explicit
 verifier boundary.
 """
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import json
 import re
@@ -79,6 +79,7 @@ VERIFIED_PROSE_RES = [
     ),
 ]
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+MAX_FUTURE_SKEW = timedelta(minutes=5)
 
 
 def _count_value(text):
@@ -107,13 +108,15 @@ def _phrase_count(phrase):
 
 
 def _valid_rfc3339(value):
-    if not isinstance(value, str) or not value.strip():
+    if not isinstance(value, str) or not value.strip() or "T" not in value:
         return False
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return False
-    return "T" in value
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return False
+    return parsed.astimezone(timezone.utc) <= datetime.now(timezone.utc) + MAX_FUTURE_SKEW
 
 
 def load_manifest(errors):
@@ -184,7 +187,7 @@ def load_manifest(errors):
         if not isinstance(source_revision, str) or not FULL_SHA_RE.fullmatch(source_revision):
             errors.append(f"manifest claim[{i}] source_revision must be a full 40-hex commit SHA")
         if not _valid_rfc3339(generated_at):
-            errors.append(f"manifest claim[{i}] generated_at must be RFC3339-like date-time")
+            errors.append(f"manifest claim[{i}] generated_at must be timezone-aware RFC3339 and not materially future-dated")
         if not isinstance(verifier_boundary, str) or not verifier_boundary.strip():
             errors.append(f"manifest claim[{i}] requires verifier_boundary")
 
