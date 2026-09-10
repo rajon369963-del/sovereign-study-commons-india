@@ -94,6 +94,29 @@ def _count_value(text):
     return None
 
 
+def _canonical_family(text):
+    if not isinstance(text, str):
+        return None
+    normalized = re.sub(r"[-_\s]+", " ", text.strip().casefold())
+    aliases = {
+        "competitor": "competitors",
+        "competitors": "competitors",
+        "competitor record": "competitors",
+        "competitor records": "competitors",
+        "practitioner insight": "practitioner_insights",
+        "practitioner insights": "practitioner_insights",
+        "reusable wheel": "reusable_wheels",
+        "reusable wheels": "reusable_wheels",
+        "hack": "hacks",
+        "hacks": "hacks",
+        "tip": "tips",
+        "tips": "tips",
+        "trick": "tricks",
+        "tricks": "tricks",
+    }
+    return aliases.get(normalized)
+
+
 def _token_count(token):
     for regex in VERIFIED_TOKEN_RES:
         match = regex.fullmatch(token)
@@ -102,11 +125,27 @@ def _token_count(token):
     return None
 
 
+def _token_family(token):
+    for regex in VERIFIED_TOKEN_RES:
+        match = regex.fullmatch(token)
+        if match:
+            return _canonical_family(match.group(2))
+    return None
+
+
 def _phrase_count(phrase):
     for regex in VERIFIED_PROSE_RES:
         match = regex.fullmatch(phrase)
         if match:
             return _count_value(match.group(1))
+    return None
+
+
+def _phrase_family(phrase):
+    for regex in VERIFIED_PROSE_RES:
+        match = regex.fullmatch(phrase)
+        if match:
+            return _canonical_family(match.group(2))
     return None
 
 
@@ -154,8 +193,11 @@ def load_manifest(errors):
         generated_at = claim.get("generated_at")
         verifier_boundary = claim.get("verifier_boundary")
 
+        manifest_family = _canonical_family(family)
         if not isinstance(family, str) or not family.strip():
             errors.append(f"manifest claim[{i}] requires claim_family")
+        elif manifest_family is None:
+            errors.append(f"manifest claim[{i}] claim_family is outside bounded family grammar: {family!r}")
         if not isinstance(expected_count, int) or expected_count < 0:
             errors.append(f"manifest claim[{i}] has invalid expected_count")
             continue
@@ -196,20 +238,30 @@ def load_manifest(errors):
 
         if token:
             token_count = _token_count(token)
+            token_family = _token_family(token)
             if token_count is None:
                 errors.append(f"manifest claim[{i}] token is outside bounded VERIFIED count grammar: {token!r}")
             elif token_count != expected_count:
                 errors.append(f"manifest claim[{i}] token count disagrees with expected_count")
+            if token_family is None:
+                errors.append(f"manifest claim[{i}] token family is outside bounded family grammar: {token!r}")
+            elif manifest_family is not None and token_family != manifest_family:
+                errors.append(f"manifest claim[{i}] token family disagrees with claim_family")
             key = token.casefold()
             if key in by_token:
                 errors.append(f"duplicate manifest token: {token}")
             by_token[key] = claim
         if phrase:
             phrase_count = _phrase_count(phrase)
+            phrase_family = _phrase_family(phrase)
             if phrase_count is None:
                 errors.append(f"manifest claim[{i}] phrase is outside bounded verified-count grammar: {phrase!r}")
             elif phrase_count != expected_count:
                 errors.append(f"manifest claim[{i}] phrase count disagrees with expected_count")
+            if phrase_family is None:
+                errors.append(f"manifest claim[{i}] phrase family is outside bounded family grammar: {phrase!r}")
+            elif manifest_family is not None and phrase_family != manifest_family:
+                errors.append(f"manifest claim[{i}] phrase family disagrees with claim_family")
             key = phrase.casefold()
             if key in by_phrase:
                 errors.append(f"duplicate manifest phrase: {phrase}")
