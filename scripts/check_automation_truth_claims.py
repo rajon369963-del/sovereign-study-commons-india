@@ -57,22 +57,24 @@ REQUIRED = {
 }
 
 COUNT_TEXT = r"(?:\d+|one(?:\s+|-)hundred)"
-FAMILY_TEXT = r"(?:competitors?|practitioner\s+insights?|reusable\s+wheels?|hacks?|tips?|tricks?)"
+FAMILY_TEXT = r"(?:competitors?|competitor\s+records?|practitioner\s+insights?|reusable\s+wheels?|hacks?|tips?|tricks?)"
+STATUS_TEXT = r"(?:verified|validated|confirmed)"
+STATUS_ADVERB_TEXT = r"(?:(?:independently|fully)\s+)?"
 VERIFIED_TOKEN_RES = [
     re.compile(r"\bVERIFIED_(\d+)_([A-Z0-9_]+)\b"),
     re.compile(r"\bVERIFIED-(\d+)-([A-Z0-9-]+)\b", re.IGNORECASE),
 ]
 VERIFIED_PROSE_RES = [
     re.compile(
-        rf"\b(?:verified|validated|confirmed)(?:\s+exactly)?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
+        rf"\b{STATUS_TEXT}(?:\s+(?:exactly|all))?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
     ),
     re.compile(
-        rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?(?:verified|validated|confirmed)\b",
+        rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?{STATUS_ADVERB_TEXT}{STATUS_TEXT}\b",
         re.IGNORECASE,
     ),
     re.compile(
-        rf"\b({COUNT_TEXT})\s+(?:verified|validated|confirmed)\s+({FAMILY_TEXT})\b",
+        rf"\b({COUNT_TEXT})\s+{STATUS_ADVERB_TEXT}{STATUS_TEXT}\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
     ),
 ]
