@@ -61,7 +61,7 @@ FAMILY_TEXT = r"(?:competitors?|competitor\s+records?|practitioner\s+insights?|r
 STATUS_TEXT = r"(?:verified|validated|confirmed)"
 STATUS_ADVERB_TEXT = r"(?:(?:independently|fully)\s+)?"
 VERIFIED_TOKEN_RES = [
-    re.compile(r"\bVERIFIED_(\d+)_([A-Z0-9_]+)\b"),
+    re.compile(r"\bVERIFIED_(\d+)_([A-Z0-9_]+)\b", re.IGNORECASE),
     re.compile(r"\bVERIFIED-(\d+)-([A-Z0-9-]+)\b", re.IGNORECASE),
 ]
 VERIFIED_PROSE_RES = [
