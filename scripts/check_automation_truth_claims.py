@@ -30,9 +30,6 @@ FORBIDDEN = {
     "Multi-Account Quota Harvester": "quota-evasion framing",
 }
 
-# Bounded aliases of the same historical false-green status family. These are
-# deliberately token/status shaped rather than fuzzy prose, to avoid policing
-# ordinary contributor discussion.
 FORBIDDEN_STATUS_RE = re.compile(
     r"\b(?:PASSED?|SUCCESS|SUCCESSFUL|VERIFIED|VALIDATED|CONFIRMED)[_-]PHYSICAL(?:[_-]VERIFICATION)?\b"
     r"|\bPHYSICAL[_-](?:PASS(?:ED)?|SUCCESS|VERIFIED|VALIDATED|CONFIRMED)\b",
@@ -176,19 +173,38 @@ def _checked_revision():
     return revision.lower() if FULL_SHA_RE.fullmatch(revision) else None
 
 
-def _evidence_matches_revision(source_revision, rel_path, candidate):
-    """Return True only when current evidence bytes equal the path at source_revision."""
+def _evidence_matches_revision(source_revision, rel_path):
+    """Bind the literal manifest path to a regular Git blob and identical worktree bytes."""
+    rel = Path(rel_path)
+    if rel.is_absolute() or ".." in rel.parts:
+        return False
+    canonical_rel = rel.as_posix()
+    root = ROOT.resolve()
+    candidate = root / rel
     try:
-        canonical_rel = candidate.relative_to(ROOT.resolve()).as_posix()
-        result = subprocess.run(
+        resolved = candidate.resolve(strict=True)
+        # Reject symlink aliases in the final path or any parent component.
+        if resolved != candidate or not candidate.is_file():
+            return False
+        tree = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-tree", source_revision, "--", canonical_rel],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.rstrip("\n")
+        if not (tree.startswith("100644 blob ") or tree.startswith("100755 blob ")):
+            return False
+        if "\t" not in tree or tree.split("\t", 1)[1] != canonical_rel:
+            return False
+        committed = subprocess.run(
             ["git", "-C", str(ROOT), "show", f"{source_revision}:{canonical_rel}"],
             check=True,
             capture_output=True,
-        )
+        ).stdout
         current_bytes = candidate.read_bytes()
     except (OSError, subprocess.CalledProcessError, ValueError):
         return False
-    return current_bytes == result.stdout
+    return current_bytes == committed
 
 
 def load_manifest(errors):
@@ -261,18 +277,9 @@ def load_manifest(errors):
                 if not isinstance(rel, str) or not rel.strip():
                     errors.append(f"manifest claim[{i}] has invalid evidence path: {rel!r}")
                     continue
-                candidate = (ROOT / rel).resolve()
-                try:
-                    candidate.relative_to(ROOT.resolve())
-                except ValueError:
-                    errors.append(f"manifest claim[{i}] evidence path escapes repository: {rel!r}")
-                    continue
-                if not candidate.is_file():
-                    errors.append(f"manifest claim[{i}] evidence path missing: {rel!r}")
-                    continue
-                if source_revision_valid and not _evidence_matches_revision(source_revision, rel, candidate):
+                if source_revision_valid and not _evidence_matches_revision(source_revision, rel):
                     errors.append(
-                        f"manifest claim[{i}] evidence path bytes do not match source_revision: {rel!r}"
+                        f"manifest claim[{i}] evidence path is not the same regular-file bytes at source_revision: {rel!r}"
                     )
 
         if not _valid_rfc3339(generated_at):
