@@ -63,17 +63,14 @@ VERIFIED_TOKEN_RES = [
     re.compile(r"\bVERIFIED-(\d+)-([A-Z0-9-]+)\b", re.IGNORECASE),
 ]
 VERIFIED_PROSE_RES = [
-    # Canonical and adverb-inserted prefix forms, including word-number 100.
     re.compile(
         rf"\b(?:verified|validated|confirmed)(?:\s+exactly)?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
     ),
-    # Reordered form: `100 competitors verified` / `one hundred competitors confirmed`.
     re.compile(
         rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?(?:verified|validated|confirmed)\b",
         re.IGNORECASE,
     ),
-    # Count-status-family form: `100 verified competitors` / `one hundred validated competitors`.
     re.compile(
         rf"\b({COUNT_TEXT})\s+(?:verified|validated|confirmed)\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
@@ -244,15 +241,17 @@ def main() -> int:
             if needle not in text:
                 errors.append(f"{path.relative_to(ROOT)} missing required boundary {needle!r}")
 
+    forbidden_casefold = [(needle.casefold(), needle, reason) for needle, reason in FORBIDDEN.items()]
     for path in iter_surfaces():
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
         rel = path.relative_to(ROOT)
-        for needle, reason in FORBIDDEN.items():
-            if needle in text:
-                errors.append(f"{rel} contains forbidden {needle!r}: {reason}")
+        text_casefold = text.casefold()
+        for folded_needle, needle, reason in forbidden_casefold:
+            if folded_needle in text_casefold:
+                errors.append(f"{rel} contains forbidden {needle!r} (case-insensitive match): {reason}")
         for match in FORBIDDEN_STATUS_RE.finditer(text):
             errors.append(f"{rel} contains forbidden physical-status alias {match.group(0)!r}")
         for regex in VERIFIED_TOKEN_RES:
