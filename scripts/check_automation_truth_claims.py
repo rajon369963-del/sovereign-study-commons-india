@@ -66,15 +66,15 @@ VERIFIED_TOKEN_RES = [
 ]
 VERIFIED_PROSE_RES = [
     re.compile(
-        rf"\b{STATUS_TEXT}(?:\s+(?:exactly|all))?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
+        rf"\b{STATUS_TEXT}(?:\s+(?:exactly|all|a\s+total\s+of))?\s+({COUNT_TEXT})\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
     ),
     re.compile(
-        rf"\b({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:were\s+)?{STATUS_ADVERB_TEXT}{STATUS_TEXT}\b",
+        rf"\b(?:all\s+)?({COUNT_TEXT})\s+({FAMILY_TEXT})\s+(?:(?:were|are|have\s+been)\s+)?{STATUS_ADVERB_TEXT}{STATUS_TEXT}\b",
         re.IGNORECASE,
     ),
     re.compile(
-        rf"\b({COUNT_TEXT})\s+{STATUS_ADVERB_TEXT}{STATUS_TEXT}\s+({FAMILY_TEXT})\b",
+        rf"\b(?:all\s+)?({COUNT_TEXT})\s+{STATUS_ADVERB_TEXT}{STATUS_TEXT}\s+({FAMILY_TEXT})\b",
         re.IGNORECASE,
     ),
 ]
