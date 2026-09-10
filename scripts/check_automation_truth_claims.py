@@ -79,6 +79,9 @@ VERIFIED_PROSE_RES = [
     ),
 ]
 FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+RFC3339_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})$"
+)
 MAX_FUTURE_SKEW = timedelta(minutes=5)
 
 
@@ -108,10 +111,10 @@ def _phrase_count(phrase):
 
 
 def _valid_rfc3339(value):
-    if not isinstance(value, str) or not value.strip() or "T" not in value:
+    if not isinstance(value, str) or RFC3339_RE.fullmatch(value) is None:
         return False
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00").replace("z", "+00:00"))
     except ValueError:
         return False
     if parsed.tzinfo is None or parsed.utcoffset() is None:
