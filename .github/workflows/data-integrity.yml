@@ -8,6 +8,7 @@ on:
       - 'data_lake/**'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
+      - 'scripts/verify_parquet_contracts.py'
       - 'ci/requirements-data-integrity.txt'
       - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
@@ -54,8 +55,6 @@ jobs:
 
           report = {'sqlite': [], 'parquet': []}
 
-          # Repository-specific intended membership contracts. These are explicit on
-          # purpose: a green build must not infer away an unexplained source/index gap.
           expected_fts_sources = {
               'universal_fts': 'study_units',
           }
@@ -101,7 +100,6 @@ jobs:
                       for t in tables
                   }
 
-                  # Fail closed on duplicate identity/provenance keys where present.
                   for table in tables:
                       cols = {r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')}
                       for key in ('unit_id', 'sha256_hash'):
@@ -115,9 +113,6 @@ jobs:
                                   f'total={total}, nonnull={nonnull}, distinct={distinct}'
                               )
 
-                  # Fail closed on unexplained FTS5 membership drift. Physical SQLite
-                  # integrity is not enough: the search index must represent the intended
-                  # source-table membership, not merely be internally self-consistent.
                   fts_contracts = []
                   fts_tables = sorted(
                       name for name, meta in objects.items()
@@ -240,6 +235,12 @@ jobs:
 
           print(json.dumps(report, indent=2, sort_keys=True))
           PY
+
+      - name: Verify reviewed Parquet contract bundle and hostile mutants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_parquet_contracts.py --self-test-mutants
 
       - name: Verify canonicalization adversarial suite (23/23 tests)
         shell: bash
