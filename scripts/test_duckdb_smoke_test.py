@@ -26,6 +26,10 @@ class SmokePrerequisitesTest(unittest.TestCase):
             self.assertIsNotNone(executable, f"Missing test prerequisite: {command}")
             (self.bin / command).symlink_to(executable)
         self.env = {**os.environ, "PATH": str(self.bin)}
+        # Noninteractive Bash otherwise sources host code that can replace PATH
+        # and silently bypass the missing/failing executable fixtures.
+        self.env.pop("BASH_ENV", None)
+        self.env.pop("ENV", None)
         self.bash = shutil.which("bash")
         self.assertIsNotNone(self.bash, "Missing test prerequisite: bash")
 

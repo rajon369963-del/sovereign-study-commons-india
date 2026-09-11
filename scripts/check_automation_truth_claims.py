@@ -359,6 +359,15 @@ def main() -> int:
         except UnicodeDecodeError:
             continue
         rel = path.relative_to(ROOT)
+        # This exact rejection block is a negative check, not a promotion.
+        # Require both predicates and the nonzero exit; other claims in the
+        # same file remain subject to the normal scan.
+        text = re.sub(
+            r"if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' \"\$body\" \|\| grep -Fq 'SUCCESS_PHYSICAL' \"\$body\"; then\n"
+            r"[ \t]*echo 'stale unsafe verification marker detected on public endpoint' >&2\n"
+            r"[ \t]*exit 1\n[ \t]*fi",
+            "", text,
+        )
         text_casefold = text.casefold()
         for folded_needle, needle, reason in forbidden_casefold:
             if folded_needle in text_casefold:
