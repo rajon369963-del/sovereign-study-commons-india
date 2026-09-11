@@ -2,7 +2,7 @@
 language:
 - hi
 - en
-license: mit
+license: other
 task_categories:
 - question-answering
 - multiple-choice
@@ -84,4 +84,4 @@ print(df)
 The dataset is continuously expanded via GitHub Issues and GitHub Actions using the Zero Duplicate Invariant (SHA-256 validation).
 
 ## Licensing
-This dataset is distributed under the **MIT License**.
+Repository code and maintainer-owned documentation may be covered by the repository `LICENSE`, but bundled dataset assets have **per-asset rights status** recorded in `data_lake/dataset_manifest.json`. Assets marked `UNKNOWN/REVIEW_REQUIRED` remain unresolved and are **not** promoted by this Dataset Card to a categorical permissive license. The `license: other` metadata above is therefore a bounded claim-parity marker for the current mixed/partly unresolved release surface, not a legal determination or redistribution authorization. Per-asset rights may be promoted only when independent evidence updates the manifest.
