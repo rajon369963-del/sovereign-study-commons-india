@@ -50,6 +50,20 @@ def main() -> None:
             },
         ]
     }
+    conflicting_verified = {
+        "assets": [
+            {
+                "path": "verified_mit.parquet",
+                "license_status": "MIT/VERIFIED",
+                "verification_status": "VERIFIED_LOCAL_CANARY",
+            },
+            {
+                "path": "verified_cc_by.parquet",
+                "license_status": "CC-BY-4.0/VERIFIED",
+                "verification_status": "VERIFIED_LOCAL_CANARY",
+            },
+        ]
+    }
 
     bad_yaml_and_body = """---\nlicense: mit\n---\n# Card\nThis dataset is distributed under the **MIT License**.\n"""
     bad_yaml_only = """---\nlicense: mit\n---\n# Card\nRights are tracked per asset in the committed manifest.\n"""
@@ -60,7 +74,30 @@ def main() -> None:
     assert_hold(bad_yaml_only, mixed, "mixed-rights categorical YAML mutant")
     assert_hold(bad_body_only, mixed, "mixed-rights categorical body mutant")
     assert_pass(bounded, mixed, "mixed-rights bounded card")
-    assert_pass(bad_yaml_and_body, all_verified, "all-verified synthetic positive control")
+    assert_pass(bad_yaml_and_body, all_verified, "all-verified compatible synthetic positive control")
+
+    # VERIFIED is not enough by itself: conflicting verified license families must not
+    # be collapsed into one categorical whole-dataset license claim.
+    assert_hold(
+        bad_yaml_and_body,
+        conflicting_verified,
+        "conflicting VERIFIED license families categorical YAML+body mutant",
+    )
+    assert_hold(
+        bad_yaml_only,
+        conflicting_verified,
+        "conflicting VERIFIED license families categorical YAML mutant",
+    )
+    assert_hold(
+        bad_body_only,
+        conflicting_verified,
+        "conflicting VERIFIED license families categorical body mutant",
+    )
+    assert_pass(
+        bounded,
+        conflicting_verified,
+        "conflicting VERIFIED license families bounded non-categorical card",
+    )
 
     # Real repository object: exact card + exact manifest must be bounded after the repair.
     root = Path(__file__).resolve().parents[1]
@@ -136,7 +173,10 @@ def main() -> None:
         assert evidence2["sample"] == evidence["sample"]
         assert evidence2["sha256"] != first_digest
 
-    print("PASS: dataset-card license claim parity court, hostile mixed-rights fixtures, and bounded 10k evidence envelope")
+    print(
+        "PASS: dataset-card license claim parity court, conflicting VERIFIED-license fixtures, "
+        "hostile mixed-rights fixtures, and bounded 10k evidence envelope"
+    )
 
 
 if __name__ == "__main__":
