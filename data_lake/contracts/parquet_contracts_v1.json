@@ -1,0 +1,23 @@
+{
+  "contract_format_version": "1.0.0",
+  "claim_ceiling": "Bounded schema/manifest/consumer-query compatibility only; not learner value, redistribution rights, semantic correctness of all rows, or external adoption.",
+  "assets": [
+    {
+      "bundle_id": "universal-study-lake-parquet-v1",
+      "asset_path": "data_lake/parquet/universal_study_lake.parquet",
+      "asset_sha256": "0467aa8bff39637fb79d6870724b7227afb1cdebad37a4e568007bed9594b22d",
+      "manifest_contract": {
+        "schema_version": "universal_study_lake_parquet_v1",
+        "provenance_class": "SOCRATIC_MASTERY_CURATED_DEMO",
+        "license_status": "CC-BY-4.0/EDUCATIONAL_COMMONS",
+        "verification_status": "VERIFIED_LOCAL_CANARY"
+      },
+      "required_columns": {
+        "exam_branch": "VARCHAR"
+      },
+      "consumer_query": "SELECT exam_branch, COUNT(*) AS units_count FROM read_parquet('{asset}') GROUP BY exam_branch ORDER BY exam_branch",
+      "consumer_contract_source": "README.md#quick-local-query",
+      "notes": "This deliberately freezes only the public consumer invariant currently documented in README plus reviewed manifest metadata. It does not infer a broader schema from candidate Parquet bytes."
+    }
+  ]
+}
