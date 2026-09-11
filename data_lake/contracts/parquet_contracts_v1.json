@@ -1,6 +1,6 @@
 {
-  "contract_format_version": "1.0.0",
-  "claim_ceiling": "Bounded schema/manifest/consumer-query compatibility only; not learner value, redistribution rights, semantic correctness of all rows, or external adoption.",
+  "contract_format_version": "1.1.0",
+  "claim_ceiling": "Bounded asset/schema/manifest/reviewed-source/query compatibility only; not learner value, redistribution rights, semantic correctness of all rows, or external adoption.",
   "assets": [
     {
       "bundle_id": "universal-study-lake-parquet-v1",
@@ -15,9 +15,12 @@
       "required_columns": {
         "exam_branch": "VARCHAR"
       },
-      "consumer_query": "SELECT exam_branch, COUNT(*) AS units_count FROM read_parquet('{asset}') GROUP BY exam_branch ORDER BY exam_branch",
       "consumer_contract_source": "README.md#quick-local-query",
-      "notes": "This deliberately freezes only the public consumer invariant currently documented in README plus reviewed manifest metadata. It does not infer a broader schema from candidate Parquet bytes."
+      "reviewed_source_sha256": "4411edd475b6fea0c0054d4515cbab2e7950f69945ac94df8b333095fc9e2e66",
+      "reviewed_source_normalization": "CRLF/CR-to-LF; exactly one final LF; preserve all other SQL bytes",
+      "consumer_query": "SELECT exam_branch, COUNT(*) AS units_count FROM read_parquet('{asset}') GROUP BY exam_branch ORDER BY exam_branch",
+      "consumer_query_authority": "fixture-only-non-authoritative",
+      "notes": "The authoritative consumer query is the uniquely extracted SQL fence under README.md section '## Quick local query (DuckDB)'. The embedded consumer_query remains only as a synthetic-fixture compatibility helper and MUST NOT establish reviewed-source identity."
     }
   ]
 }
