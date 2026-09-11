@@ -8,6 +8,7 @@ what the committed manifest currently says about bundled assets.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -19,6 +20,7 @@ WHOLE_DATASET_PERMISSIVE_PATTERNS = (
     re.compile(r"\bentire\s+dataset\b.{0,80}\bmit\b", re.I | re.S),
     re.compile(r"\ball\s+dataset\s+(?:content|assets|files)\b.{0,80}\bmit\b", re.I | re.S),
 )
+DEFAULT_EVIDENCE_SAMPLE_LIMIT = 20
 
 
 def _frontmatter(text: str) -> str:
@@ -85,16 +87,60 @@ def evaluate(card_text: str, manifest: dict) -> dict:
     }
 
 
+def _canonical_sha256(value: object) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def bounded_evidence_envelope(
+    result: dict,
+    *,
+    manifest_path: str,
+    manifest_sha256: str,
+    sample_limit: int = DEFAULT_EVIDENCE_SAMPLE_LIMIT,
+) -> dict:
+    """Keep the decision over full evidence while bounding log/stdout volume.
+
+    The full unresolved set remains represented by total+digest and by the exact
+    manifest path+digest. The sample is diagnostic only and never drives the
+    decision.
+    """
+    unresolved = list(result.get("unresolved_assets", []))
+    envelope = {k: v for k, v in result.items() if k != "unresolved_assets"}
+    envelope["unresolved_assets"] = {
+        "total": len(unresolved),
+        "sha256": _canonical_sha256(unresolved),
+        "sample_limit": sample_limit,
+        "sample": unresolved[:sample_limit],
+        "sample_truncated": len(unresolved) > sample_limit,
+        "full_evidence_reference": {
+            "manifest_path": manifest_path,
+            "manifest_sha256": manifest_sha256,
+        },
+    }
+    return envelope
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--card", default="DATASET_CARD.md")
     parser.add_argument("--manifest", default="data_lake/dataset_manifest.json")
+    parser.add_argument("--evidence-sample-limit", type=int, default=DEFAULT_EVIDENCE_SAMPLE_LIMIT)
     args = parser.parse_args()
+    if args.evidence_sample_limit < 0:
+        parser.error("--evidence-sample-limit must be >= 0")
 
     card = Path(args.card).read_text(encoding="utf-8")
-    manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+    manifest_bytes = Path(args.manifest).read_bytes()
+    manifest = json.loads(manifest_bytes.decode("utf-8"))
     result = evaluate(card, manifest)
-    print(json.dumps(result, indent=2, sort_keys=True))
+    envelope = bounded_evidence_envelope(
+        result,
+        manifest_path=args.manifest,
+        manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
+        sample_limit=args.evidence_sample_limit,
+    )
+    print(json.dumps(envelope, indent=2, sort_keys=True))
     return 0 if result["decision"] == "PASS_BOUNDED" else 2
 
 
