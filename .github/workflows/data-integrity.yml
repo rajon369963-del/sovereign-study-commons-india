@@ -236,6 +236,12 @@ jobs:
           print(json.dumps(report, indent=2, sort_keys=True))
           PY
 
+      - name: Verify reviewed Parquet contract bundle and hostile mutants
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_parquet_contracts.py --self-test-mutants
+
       - name: Verify canonicalization adversarial suite (23/23 tests)
         shell: bash
         run: |
