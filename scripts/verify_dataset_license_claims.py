@@ -21,6 +21,7 @@ WHOLE_DATASET_PERMISSIVE_PATTERNS = (
     re.compile(r"\ball\s+dataset\s+(?:content|assets|files)\b.{0,80}\bmit\b", re.I | re.S),
 )
 DEFAULT_EVIDENCE_SAMPLE_LIMIT = 20
+VERIFIED_SUFFIX = "/VERIFIED"
 
 
 def _frontmatter(text: str) -> str:
@@ -56,12 +57,37 @@ def unresolved_assets(manifest: dict) -> list[dict]:
     return out
 
 
+def verified_license_ids(manifest: dict) -> set[str]:
+    """Return only explicit per-asset license families marked */VERIFIED.
+
+    This is a bounded claim-parity input, not independent legal evidence.
+    Unknown/review-required/unverified rows are deliberately excluded here and
+    remain governed by unresolved_assets().
+    """
+    out: set[str] = set()
+    for asset in manifest.get("assets", []):
+        license_status = str(asset.get("license_status", "")).strip()
+        verification_status = str(asset.get("verification_status", "")).upper()
+        status_upper = license_status.upper()
+        if any(marker in status_upper for marker in UNKNOWN_MARKERS) or any(
+            marker in verification_status for marker in UNKNOWN_MARKERS
+        ):
+            continue
+        if not status_upper.endswith(VERIFIED_SUFFIX):
+            continue
+        license_id = license_status[: -len(VERIFIED_SUFFIX)].strip().lower()
+        if license_id:
+            out.add(license_id)
+    return out
+
+
 def categorical_body_claim(text: str) -> bool:
     return any(p.search(text) for p in WHOLE_DATASET_PERMISSIVE_PATTERNS)
 
 
 def evaluate(card_text: str, manifest: dict) -> dict:
     unresolved = unresolved_assets(manifest)
+    verified_licenses = verified_license_ids(manifest)
     license_id = card_license_id(card_text)
     body_is_categorical = categorical_body_claim(card_text)
     yaml_is_categorical = license_id in CATEGORICAL_LICENSES
@@ -74,15 +100,32 @@ def evaluate(card_text: str, manifest: dict) -> dict:
     if unresolved and body_is_categorical:
         reasons.append("dataset-card prose makes a categorical whole-dataset permissive license claim")
 
+    if yaml_is_categorical and verified_licenses and (
+        len(verified_licenses) != 1 or license_id not in verified_licenses
+    ):
+        reasons.append(
+            "dataset-card YAML categorical license conflicts with explicit VERIFIED per-asset license families "
+            f"{sorted(verified_licenses)!r}"
+        )
+    if body_is_categorical and verified_licenses and (
+        len(verified_licenses) != 1 or "mit" not in verified_licenses
+    ):
+        reasons.append(
+            "dataset-card prose categorical MIT claim conflicts with explicit VERIFIED per-asset license families "
+            f"{sorted(verified_licenses)!r}"
+        )
+
     decision = "HOLD" if reasons else "PASS_BOUNDED"
     return {
         "decision": decision,
         "card_license_id": license_id,
+        "verified_license_ids": sorted(verified_licenses),
         "unresolved_assets": unresolved,
         "categorical_body_claim": body_is_categorical,
         "reasons": reasons,
         "claim_ceiling": (
-            "claim-parity only; no ownership, infringement, redistribution permission, or legal-compliance conclusion"
+            "claim-parity only; manifest VERIFIED labels are bounded inputs, not independent proof of ownership, "
+            "compatibility, redistribution permission, infringement status, or legal compliance"
         ),
     }
 
