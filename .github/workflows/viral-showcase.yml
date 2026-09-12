@@ -46,6 +46,10 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+      - name: Run Permanent Adversarial Canary Regression Suite
+        run: |
+          pip install cryptography
+          python3 tests/test_adversarial_receipt_canaries.py
       - name: Verify Cryptographic Receipt & Scorecard Zero-Drift
         run: |
           pip install cryptography
