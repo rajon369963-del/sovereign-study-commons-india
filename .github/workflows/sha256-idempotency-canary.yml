@@ -7,6 +7,10 @@ on:
     paths:
       - 'data_lake/sqlite/**'
       - 'scripts/prove_sha256_idempotency.py'
+      - 'scripts/verify_dataset_manifest.py'
+      - 'scripts/test_dataset_manifest_sensitivity.py'
+      - 'scripts/verify_required_data_integrity_structure.py'
+      - '.github/workflows/data-integrity.yml'
       - '.github/workflows/sha256-idempotency-canary.yml'
   workflow_dispatch:
 
@@ -24,6 +28,9 @@ jobs:
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Guard required Data integrity manifest enforcement
+        run: python scripts/verify_required_data_integrity_structure.py
 
       - name: Prove UNIQUE(full sha256_hash) on isolated copy
         shell: bash
