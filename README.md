@@ -1,3 +1,12 @@
+[![Agents: Supported](https://img.shields.io/badge/Agents-Supported-00f2fe.svg?style=flat-square)](./llms.txt)
+[![llms.txt: Active](https://img.shields.io/badge/llms.txt-Active-success.svg?style=flat-square)](./llms.txt)
+[![Zero-Install Demo](https://img.shields.io/badge/Showcase-Interactive%20Web-blueviolet.svg?style=flat-square)](https://rajon369963-del.github.io/sovereign-study-commons-india/)
+
+<p align="center">
+  <img src="./assets/scorecard.svg" alt="Sovereign Study Commons Scorecard" width="100%"/>
+</p>
+
+
 # ⚡ Sovereign Study Commons India (सार्वजनिक अध्ययन महा-ज्ञानकोश)
 
 > भारत के छात्रों के लिए a public, open study-data commons. Repository truth is strictly preferred over intended future state.
