@@ -1,0 +1,142 @@
+{
+  "AGENTIC_AI_SWARMS": {
+    "total_paras": 20385,
+    "unique_paras": 17611,
+    "files_count": 118,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/AGENTIC_AI_SWARMS/MASTER_CONSOLIDATED_AGENTIC_AI_SWARMS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/AGENTIC_AI_SWARMS"
+  },
+  "ANALOG_DIGITAL_ELECTRONICS": {
+    "total_paras": 7379,
+    "unique_paras": 5190,
+    "files_count": 35,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ANALOG_DIGITAL_ELECTRONICS/MASTER_CONSOLIDATED_ANALOG_DIGITAL_ELECTRONICS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ANALOG_DIGITAL_ELECTRONICS"
+  },
+  "BIOHACKING_LONGEVITY": {
+    "total_paras": 4344,
+    "unique_paras": 4238,
+    "files_count": 29,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/BIOHACKING_LONGEVITY/MASTER_CONSOLIDATED_BIOHACKING_LONGEVITY.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/BIOHACKING_LONGEVITY"
+  },
+  "CIRCUITS_NETWORK_THEORY": {
+    "total_paras": 5795,
+    "unique_paras": 2930,
+    "files_count": 20,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/CIRCUITS_NETWORK_THEORY/MASTER_CONSOLIDATED_CIRCUITS_NETWORK_THEORY.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/CIRCUITS_NETWORK_THEORY"
+  },
+  "CONTROL_SYSTEMS": {
+    "total_paras": 9640,
+    "unique_paras": 4491,
+    "files_count": 30,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/CONTROL_SYSTEMS/MASTER_CONSOLIDATED_CONTROL_SYSTEMS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/CONTROL_SYSTEMS"
+  },
+  "DATABASE_ENGINEERING": {
+    "total_paras": 3481,
+    "unique_paras": 3210,
+    "files_count": 22,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/DATABASE_ENGINEERING/MASTER_CONSOLIDATED_DATABASE_ENGINEERING.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/DATABASE_ENGINEERING"
+  },
+  "DISTRIBUTED_SYSTEMS_CLOUD": {
+    "total_paras": 12834,
+    "unique_paras": 10917,
+    "files_count": 73,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/DISTRIBUTED_SYSTEMS_CLOUD/MASTER_CONSOLIDATED_DISTRIBUTED_SYSTEMS_CLOUD.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/DISTRIBUTED_SYSTEMS_CLOUD"
+  },
+  "ELECTRICAL_MACHINES": {
+    "total_paras": 15382,
+    "unique_paras": 10372,
+    "files_count": 70,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ELECTRICAL_MACHINES/MASTER_CONSOLIDATED_ELECTRICAL_MACHINES.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ELECTRICAL_MACHINES"
+  },
+  "EMFT_ELECTROMAGNETICS": {
+    "total_paras": 1619,
+    "unique_paras": 951,
+    "files_count": 7,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/EMFT_ELECTROMAGNETICS/MASTER_CONSOLIDATED_EMFT_ELECTROMAGNETICS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/EMFT_ELECTROMAGNETICS"
+  },
+  "ENGINEERING_MATHEMATICS": {
+    "total_paras": 3731,
+    "unique_paras": 3000,
+    "files_count": 20,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ENGINEERING_MATHEMATICS/MASTER_CONSOLIDATED_ENGINEERING_MATHEMATICS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/ENGINEERING_MATHEMATICS"
+  },
+  "LANGUAGES_COMPILERS_SYSTEMS": {
+    "total_paras": 30298,
+    "unique_paras": 29155,
+    "files_count": 195,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/LANGUAGES_COMPILERS_SYSTEMS/MASTER_CONSOLIDATED_LANGUAGES_COMPILERS_SYSTEMS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/LANGUAGES_COMPILERS_SYSTEMS"
+  },
+  "LLM_ARCHITECTURE_INFERENCE": {
+    "total_paras": 9423,
+    "unique_paras": 7848,
+    "files_count": 53,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/LLM_ARCHITECTURE_INFERENCE/MASTER_CONSOLIDATED_LLM_ARCHITECTURE_INFERENCE.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/LLM_ARCHITECTURE_INFERENCE"
+  },
+  "MEASUREMENT_INSTRUMENTATION": {
+    "total_paras": 1905,
+    "unique_paras": 1186,
+    "files_count": 8,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/MEASUREMENT_INSTRUMENTATION/MASTER_CONSOLIDATED_MEASUREMENT_INSTRUMENTATION.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/MEASUREMENT_INSTRUMENTATION"
+  },
+  "POWER_ELECTRONICS_DRIVES": {
+    "total_paras": 6309,
+    "unique_paras": 2962,
+    "files_count": 20,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/POWER_ELECTRONICS_DRIVES/MASTER_CONSOLIDATED_POWER_ELECTRONICS_DRIVES.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/POWER_ELECTRONICS_DRIVES"
+  },
+  "POWER_SYSTEMS": {
+    "total_paras": 3812,
+    "unique_paras": 2355,
+    "files_count": 16,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/POWER_SYSTEMS/MASTER_CONSOLIDATED_POWER_SYSTEMS.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/POWER_SYSTEMS"
+  },
+  "QUANT_TRADING_HFT": {
+    "total_paras": 3478,
+    "unique_paras": 3466,
+    "files_count": 24,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/QUANT_TRADING_HFT/MASTER_CONSOLIDATED_QUANT_TRADING_HFT.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/QUANT_TRADING_HFT"
+  },
+  "RAG_VECTOR_SEARCH": {
+    "total_paras": 17087,
+    "unique_paras": 14862,
+    "files_count": 100,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/RAG_VECTOR_SEARCH/MASTER_CONSOLIDATED_RAG_VECTOR_SEARCH.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/RAG_VECTOR_SEARCH"
+  },
+  "SIGNALS_SYSTEMS_DSP": {
+    "total_paras": 6226,
+    "unique_paras": 4368,
+    "files_count": 30,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/SIGNALS_SYSTEMS_DSP/MASTER_CONSOLIDATED_SIGNALS_SYSTEMS_DSP.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/SIGNALS_SYSTEMS_DSP"
+  },
+  "STARTUP_PRODUCT_GROWTH": {
+    "total_paras": 11120,
+    "unique_paras": 10282,
+    "files_count": 69,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/STARTUP_PRODUCT_GROWTH/MASTER_CONSOLIDATED_STARTUP_PRODUCT_GROWTH.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/STARTUP_PRODUCT_GROWTH"
+  },
+  "WEB_AUTOMATION_SCRAPING": {
+    "total_paras": 6181,
+    "unique_paras": 5309,
+    "files_count": 36,
+    "master_consolidated_file": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/WEB_AUTOMATION_SCRAPING/MASTER_CONSOLIDATED_WEB_AUTOMATION_SCRAPING.md",
+    "output_dir": "/Users/rajondas/AIR1_ARCHIVES/CANONICAL_SUBJECT_NOTEBOOKS/WEB_AUTOMATION_SCRAPING"
+  }
+}

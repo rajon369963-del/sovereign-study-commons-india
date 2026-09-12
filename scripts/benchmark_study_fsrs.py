@@ -1,3 +1,4 @@
+import hashlib
 #!/usr/bin/env python3
 """
 Sovereign Study Commons India - Standalone FSRS-5 Continuous Memory Benchmark Reproducer
@@ -13,6 +14,7 @@ import platform
 import statistics
 import sys
 import time
+from pathlib import Path
 
 CARDS = [(float(i % 30 + 1), float(i % 10 + 2.5)) for i in range(100)]
 
@@ -60,7 +62,6 @@ def run_benchmark(rounds: int = 2000):
 
     
     import json
-    from pathlib import Path
     results = {
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "platform": f"{sys_name}-{machine}",
@@ -71,6 +72,7 @@ def run_benchmark(rounds: int = 2000):
         "avg_latency_us": round(avg_lat, 3),
         "p95_latency_us": round(p95_lat, 3),
         "throughput_evals_sec": round(ops_sec, 1),
+        "benchmark_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "status": "PASS"
     }
     out_file = Path(__file__).parent / "study_benchmark_results.json"
