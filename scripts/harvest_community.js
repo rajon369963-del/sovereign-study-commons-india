@@ -14,9 +14,9 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
-const SQLITE_DB = path.join(REPO_ROOT, 'data_lake', 'sqlite', 'universal_study_lake.sqlite');
-const EXPORT_SCRIPT = path.join(REPO_ROOT, 'scripts', 'export_parquet.sh');
-const C17_CLEAN_VTT = path.join(REPO_ROOT, 'c17_engines', 'clean_vtt');
+const SQLITE_DB = process.env.HARVEST_SQLITE_DB || path.join(REPO_ROOT, 'data_lake', 'sqlite', 'universal_study_lake.sqlite');
+const EXPORT_SCRIPT = process.env.HARVEST_EXPORT_SCRIPT || path.join(REPO_ROOT, 'scripts', 'export_parquet.sh');
+const C17_CLEAN_VTT = process.env.HARVEST_C17_CLEAN_VTT || path.join(REPO_ROOT, 'c17_engines', 'clean_vtt');
 
 function getArg(key) {
   const envVal = process.env[key.toUpperCase()];
@@ -188,9 +188,40 @@ execFileSync('sqlite3', [SQLITE_DB, insertQuery]);
 try {
   execFileSync('bash', [EXPORT_SCRIPT], { encoding: 'utf-8' });
 } catch (exportErr) {
-  console.error(`❌ [FATAL] Parquet export failed: ${exportErr.message}`);
-  execFileSync('sqlite3', [SQLITE_DB, `DELETE FROM study_units WHERE unit_id = '${esc(newUnitId)}';`]);
-  process.exit(1);
+  let postRollbackRowCount = null;
+  try {
+    execFileSync('sqlite3', [SQLITE_DB, `DELETE FROM study_units WHERE unit_id = '${esc(newUnitId)}';`]);
+    const countRaw = execFileSync(
+      'sqlite3',
+      [SQLITE_DB, `SELECT COUNT(*) FROM study_units WHERE unit_id = '${esc(newUnitId)}';`],
+      { encoding: 'utf-8' }
+    ).trim();
+    postRollbackRowCount = Number.parseInt(countRaw, 10);
+    if (!Number.isInteger(postRollbackRowCount) || postRollbackRowCount !== 0) {
+      throw new Error(`rollback readback expected 0 rows, observed ${countRaw || 'unknown'}`);
+    }
+    console.error(JSON.stringify({
+      status: 'NOT_INGESTED',
+      reason: 'PARQUET_EXPORT_FAILED_ROLLBACK_CONFIRMED',
+      unit_id: newUnitId,
+      rollback_attempted: true,
+      post_rollback_row_count: 0,
+      message: 'Parquet export failed; exact inserted unit absence was confirmed after rollback.'
+    }, null, 2));
+    process.exit(1);
+  } catch (rollbackErr) {
+    console.error(JSON.stringify({
+      status: 'ROLLBACK_FAILED_OR_UNVERIFIED',
+      reason: 'PARQUET_EXPORT_FAILED_ROLLBACK_UNVERIFIED',
+      unit_id: newUnitId,
+      rollback_attempted: true,
+      post_rollback_row_count: postRollbackRowCount,
+      export_error: exportErr.message,
+      rollback_error: rollbackErr.message,
+      message: 'Parquet export failed and rollback could not be authoritatively confirmed.'
+    }, null, 2));
+    process.exit(2);
+  }
 }
 
 console.log(JSON.stringify({
