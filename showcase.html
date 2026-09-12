@@ -3,18 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sovereign-study-commons-india - Interactive Cognitive Retrieval Engine</title>
+  <title>⚡ sovereign-study-commons-india - FSRS-5 Cognitive Engine</title>
   <style>
-    :root { --bg: #07090e; --card: rgba(255,255,255,0.04); --border: rgba(255,255,255,0.12); --accent: #00f2fe; --text: #e6edf3; }
-    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
-    .container { max-width: 900px; width: 100%; }
+    body { background: #070b14; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+    .container { max-width: 840px; width: 100%; }
     .header { text-align: center; margin-bottom: 2rem; }
-    h1 { font-size: 2.2rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #00f2fe, #4facfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .tagline { color: #8b949e; font-size: 1.1rem; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(12px); }
-    .btn { background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border: none; padding: 10px 22px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: transform 0.15s ease; }
-    .btn:hover { transform: scale(1.02); }
-    pre { background: #000; padding: 1rem; border-radius: 8px; overflow-x: auto; color: #39d353; font-size: 0.88rem; border: 1px solid #1f242c; white-space: pre-wrap; line-height: 1.5; }
+    h1 { color: #38bdf8; font-size: 2rem; margin-bottom: 0.5rem; }
+    .tagline { color: #94a3b8; font-size: 1rem; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .btn { background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; }
+    .btn:hover { opacity: 0.9; }
+    pre { background: #050811; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.85rem; color: #34d399; overflow-x: auto; white-space: pre-wrap; }
   </style>
 </head>
 <body>
@@ -25,7 +24,7 @@
     </div>
     <div class="card">
       <h3>🚀 Interactive Cognitive Retrieval Benchmark</h3>
-      <p>Execute client-side FSRS-5 retrievability calculations over synthetic card schedules. Measures real in-browser memory consolidation latency.</p>
+      <p style="color: #94a3b8;">Execute client-side synthetic FSRS-5 retrievability calculations. Measures client JavaScript formula throughput.</p>
       <button class="btn" onclick="runClientStudyBenchmark()">⚡ Run Client-Side FSRS-5 Benchmark</button>
       <div id="output-box" style="margin-top: 1rem; display: none;">
         <pre id="console-log">Initializing client-side cognitive benchmark...</pre>
@@ -34,13 +33,13 @@
   </div>
   <script>
     function runClientStudyBenchmark() {
-      const box = document.getElementById('output-box');
-      const log = document.getElementById('console-log');
-      box.style.display = 'block';
+      const box = document.getElementById("output-box");
+      const log = document.getElementById("console-log");
+      box.style.display = "block";
       
-      log.innerText = `⚡ [0.00ms] Initializing FSRS-5 continuous retrievability benchmark...\n`;
-      log.innerText += `⚡ Host Platform: ${navigator.userAgent.slice(0, 55)}...\n`;
-      log.innerText += `⚡ Available Logical CPU Cores: ${navigator.hardwareConcurrency || "Unknown"}\n`;
+      log.innerText = "⚡ [0.00ms] Initializing FSRS-5 continuous retrievability benchmark...\n";
+      log.innerText += "⚡ Host Platform: " + navigator.userAgent.slice(0, 55) + "...\n";
+      log.innerText += "⚡ Available Logical CPU Cores: " + (navigator.hardwareConcurrency || "Unknown") + "\n";
 
       const cardsCount = 25000;
       const t0 = performance.now();
@@ -55,11 +54,11 @@
       const elapsedMs = performance.now() - t0;
       const opsPerSec = (cardsCount / (elapsedMs / 1000)).toLocaleString(undefined, {maximumFractionDigits: 0});
 
-      log.innerText += `⚡ [${elapsedMs.toFixed(2)}ms] Calculated retrievability across ${cardsCount.toLocaleString()} exam cards\n`;
-      log.innerText += `⚡ Measured Client In-Browser Throughput: ${opsPerSec} cards/sec (Elapsed: ${elapsedMs.toFixed(2)} ms)\n`;
-      log.innerText += `⚡ Consolidations Triggered (R < 0.90): ${Consolidations.toLocaleString()} cards scheduled for min-heap review\n\n`;
-      log.innerText += `ℹ️ NOTE: This measures your current browser JS execution performance.\n`;
-      log.innerText += `   Master Knowledge Lake Reference: 50,000+ Parquet Evidence Spans (Verified in sovereign-study-commons lake).\n`;
+      log.innerText += "⚡ [" + elapsedMs.toFixed(2) + "ms] Calculated retrievability across " + cardsCount.toLocaleString() + " exam cards\n";
+      log.innerText += "⚡ Measured Client In-Browser Throughput: " + opsPerSec + " cards/sec (Elapsed: " + elapsedMs.toFixed(2) + " ms)\n";
+      log.innerText += "⚡ Review Threshold Triggered (R < 0.90): " + Consolidations.toLocaleString() + " cards requiring active recall\n\n";
+      log.innerText += "ℹ️ NOTE: This measures single-thread client browser JavaScript formula throughput.\n";
+      log.innerText += "   Receipt Reference: db/STRESS_BENCHMARK_REAL_WHEELS.json (SHA-256: 8ea82001a19d5a3d2065dcda9480118011244912a084c7b47734f20fdfd10889).\n";
     }
   </script>
 </body>
