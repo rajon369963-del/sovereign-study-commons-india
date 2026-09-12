@@ -66,10 +66,12 @@ jobs:
         run: |
           python3 tests/test_adversarial_receipt_canaries.py
 
-      - name: Run Receipt Validator Discriminator Court
+      - name: Run Receipt Validator Discriminator + Physical Kill-Mutant Courts
         shell: bash
         run: |
-          python -m pytest -q tests/test_receipt_validator_discriminator.py
+          python -m pytest -q \
+            tests/test_receipt_validator_discriminator.py \
+            tests/test_receipt_validator_kill_mutants.py
 
       - name: Verify Cryptographic Receipt & Scorecard Zero-Drift
         shell: bash
