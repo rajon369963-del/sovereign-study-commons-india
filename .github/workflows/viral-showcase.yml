@@ -31,10 +31,10 @@ jobs:
       - name: Execute Content Identity Oracle Adversarial Fixtures
         run: |
           python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
-      - name: Verify Cryptographic Receipt & Scorecard Zero-Drift
-        run: |
-          pip install cryptography
-          python3 scripts/verify_receipt.py
       - name: Execute Standalone Domain Benchmark Reproducer
         run: |
           python3 scripts/benchmark_study_fsrs.py
+      - name: Verify Cryptographic Receipt & Scorecard Zero-Drift
+        run: |
+          pip install cryptography
+          python3 scripts/verify_receipt.py --assert-live-benchmark scripts/study_benchmark_results.json

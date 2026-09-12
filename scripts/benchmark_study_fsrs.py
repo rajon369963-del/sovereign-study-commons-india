@@ -58,6 +58,25 @@ def run_benchmark(rounds: int = 2000):
     # Assertions
     assert ops_sec > 100_000.0, f"Throughput too low ({ops_sec} < 100,000 ops/s)"
 
+    
+    import json
+    from pathlib import Path
+    results = {
+        "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "platform": f"{sys_name}-{machine}",
+        "machine": machine,
+        "processor": proc,
+        "python_version": py_ver,
+        "total_evaluations": rounds,
+        "avg_latency_us": round(avg_lat, 3),
+        "p95_latency_us": round(p95_lat, 3),
+        "throughput_evals_sec": round(ops_sec, 1),
+        "status": "PASS"
+    }
+    out_file = Path(__file__).parent / "study_benchmark_results.json"
+    out_file.write_text(json.dumps(results, indent=2), encoding="utf-8")
+    print(f"• Saved live benchmark results to {out_file.name}")
+
     print("----------------------------------------------------------------------")
     print("✅ VERDICT: FSRS-5 MEMORY ENGINE MEETS SPEED SPECIFICATION.")
     print("======================================================================\n")
