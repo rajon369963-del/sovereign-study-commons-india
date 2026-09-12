@@ -7,6 +7,7 @@ on:
     paths:
       - 'data_lake/**'
       - 'scripts/verify_dataset_manifest.py'
+      - 'scripts/test_dataset_manifest_sensitivity.py'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
       - 'ci/requirements-data-integrity.txt'
@@ -28,6 +29,12 @@ jobs:
       - name: Checkout exact revision
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+      - name: Record runtime checkout SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'RUNTIME_CHECKOUT_SHA=%s\n' "$(git rev-parse HEAD)"
+
       - name: Install hash-locked DuckDB
         run: >-
           python -m pip install --disable-pip-version-check --no-input
@@ -36,6 +43,9 @@ jobs:
 
       - name: Verify dataset manifest parity
         run: python scripts/verify_dataset_manifest.py
+
+      - name: Verify manifest parity negative sensitivity
+        run: python scripts/test_dataset_manifest_sensitivity.py
 
       - name: Verify SQLite and Parquet integrity
         shell: bash
