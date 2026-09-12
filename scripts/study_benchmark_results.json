@@ -1,0 +1,12 @@
+{
+  "timestamp_utc": "2026-09-12T18:25:27Z",
+  "platform": "Darwin-arm64",
+  "machine": "arm64",
+  "processor": "arm",
+  "python_version": "3.11.16",
+  "total_evaluations": 2000,
+  "avg_latency_us": 0.114,
+  "p95_latency_us": 0.166,
+  "throughput_evals_sec": 8807623.9,
+  "status": "PASS"
+}
