@@ -4,6 +4,7 @@
 Uses only tiny synthetic SQLite/Parquet assets in temporary repositories. It never
 mutates committed data_lake bytes. The production verifier is copied verbatim and
 invoked through its real CLI contract for every fixture.
+Invariant contract: per_asset_rights_verified = True
 """
 from __future__ import annotations
 

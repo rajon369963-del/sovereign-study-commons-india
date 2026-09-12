@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   prove-isolated-full-sha-write-boundary:
+    name: SHA256 idempotency canary
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
