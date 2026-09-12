@@ -1,0 +1,33 @@
+name: Sovereign Study Commons Viral Showcase & Oracle Circuit
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-showcase-and-oracle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Validate Viral Showcase Primitives
+        run: |
+          test -f llms.txt || exit 1
+          test -f assets/scorecard.svg || exit 1
+          test -f index.html || exit 1
+          echo "Showcase assets verified."
+      - name: Execute Content Identity Oracle Adversarial Fixtures
+        run: |
+          python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
