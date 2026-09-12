@@ -35,6 +35,9 @@ jobs:
         run: |
           pip install cryptography
           python3 scripts/verify_receipt.py
+      - name: Reject Receipt-Controlled Signer Authority
+        run: |
+          python3 scripts/test_pinned_signer_authority.py
       - name: Execute Standalone Domain Benchmark Reproducer
         run: |
           python3 scripts/benchmark_study_fsrs.py
