@@ -68,12 +68,18 @@ jobs:
           assert parquet_files, 'no Parquet files found'
 
           report = {'sqlite': [], 'parquet': []}
-          expected_fts_sources = {'universal_fts': 'study_units'}
+
+          # Repository-specific intended membership contracts. These are explicit on
+          # purpose: a green build must not infer away an unexplained source/index gap.
+          expected_fts_sources = {
+              'universal_fts': 'study_units',
+          }
 
           def qident(name):
               return '"' + name.replace('"', '""') + '"'
 
           def bounded_metadata(con, table, rowids):
+              """Return only provenance/key metadata for drifted rows, never study text."""
               cols = [r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')]
               allowed_tokens = ('id', 'hash', 'sha', 'source', 'license', 'status', 'index', 'include', 'exclude', 'type')
               safe_cols = [c for c in cols if any(tok in c.lower() for tok in allowed_tokens)][:12]
@@ -82,7 +88,9 @@ jobs:
               projection = ', '.join(qident(c) for c in safe_cols)
               out = []
               for rid in rowids[:20]:
-                  row = con.execute(f'SELECT {projection} FROM {qident(table)} WHERE rowid=?', (rid,)).fetchone()
+                  row = con.execute(
+                      f'SELECT {projection} FROM {qident(table)} WHERE rowid=?', (rid,)
+                  ).fetchone()
                   item = {'rowid': rid}
                   if row is not None:
                       item.update(dict(zip(safe_cols, row)))
@@ -93,45 +101,101 @@ jobs:
               with sqlite3.connect(f'file:{path}?mode=ro', uri=True) as con:
                   integrity = con.execute('PRAGMA integrity_check').fetchone()[0]
                   assert integrity == 'ok', f'{path}: integrity_check={integrity!r}'
-                  objects = {r[0]: {'type': r[1], 'sql': r[2] or ''} for r in con.execute("SELECT name, type, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name")}
+
+                  objects = {
+                      r[0]: {'type': r[1], 'sql': r[2] or ''}
+                      for r in con.execute(
+                          "SELECT name, type, sql FROM sqlite_master "
+                          "WHERE name NOT LIKE 'sqlite_%' ORDER BY name"
+                      )
+                  }
                   tables = sorted(name for name, meta in objects.items() if meta['type'] == 'table')
                   assert tables, f'{path}: no user tables'
-                  row_counts = {t: con.execute(f'SELECT COUNT(*) FROM {qident(t)}').fetchone()[0] for t in tables}
+                  row_counts = {
+                      t: con.execute(f'SELECT COUNT(*) FROM {qident(t)}').fetchone()[0]
+                      for t in tables
+                  }
+
+                  # Fail closed on duplicate identity/provenance keys where present.
                   for table in tables:
                       cols = {r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')}
                       for key in ('unit_id', 'sha256_hash'):
                           if key in cols:
-                              total, nonnull, distinct = con.execute(f'SELECT COUNT(*), COUNT({qident(key)}), COUNT(DISTINCT {qident(key)}) FROM {qident(table)}').fetchone()
-                              assert total == nonnull == distinct, f'{path}:{table}: {key} must be non-null and unique; total={total}, nonnull={nonnull}, distinct={distinct}'
+                              total, nonnull, distinct = con.execute(
+                                  f'SELECT COUNT(*), COUNT({qident(key)}), '
+                                  f'COUNT(DISTINCT {qident(key)}) FROM {qident(table)}'
+                              ).fetchone()
+                              assert total == nonnull == distinct, (
+                                  f'{path}:{table}: {key} must be non-null and unique; '
+                                  f'total={total}, nonnull={nonnull}, distinct={distinct}'
+                              )
+
+                  # Fail closed on unexplained FTS5 membership drift. Physical SQLite
+                  # integrity is not enough: the search index must represent the intended
+                  # source-table membership, not merely be internally self-consistent.
                   fts_contracts = []
-                  fts_tables = sorted(name for name, meta in objects.items() if meta['type'] == 'table' and 'VIRTUAL TABLE' in meta['sql'].upper() and 'USING FTS5' in meta['sql'].upper())
+                  fts_tables = sorted(
+                      name for name, meta in objects.items()
+                      if meta['type'] == 'table'
+                      and 'VIRTUAL TABLE' in meta['sql'].upper()
+                      and 'USING FTS5' in meta['sql'].upper()
+                  )
+
                   for fts in fts_tables:
                       create_sql = objects[fts]['sql']
                       match = re.search(r"\bcontent\s*=\s*['\"]([^'\"]+)['\"]", create_sql, re.I)
-                      source = expected_fts_sources.get(fts) or (match.group(1) if match else None)
+                      source = expected_fts_sources.get(fts)
+                      if not source:
+                          source = match.group(1) if match else None
                       if not source and fts.endswith('_fts') and fts[:-4] in objects:
                           source = fts[:-4]
+
                       shadow_content = f'{fts}_content'
                       shadow_docsize = f'{fts}_docsize'
                       contract = {'fts': fts, 'source': source}
+
                       assert source, f'{path}:{fts}: no intended source-table contract'
-                      assert source in objects and objects[source]['type'] == 'table', f'{path}:{fts}: intended source table {source!r} is missing'
-                      source_ids = {r[0] for r in con.execute(f'SELECT rowid FROM {qident(source)}')}
+                      assert source in objects and objects[source]['type'] == 'table', (
+                          f'{path}:{fts}: intended source table {source!r} is missing'
+                      )
+
+                      source_ids = {
+                          r[0] for r in con.execute(f'SELECT rowid FROM {qident(source)}')
+                      }
                       source_count = len(source_ids)
-                      assert source_count == row_counts[source], f'{path}:{source}: duplicate/collision in rowid accounting'
+                      assert source_count == row_counts[source], (
+                          f'{path}:{source}: duplicate/collision in rowid accounting'
+                      )
                       contract['source_rows'] = source_count
+
                       indexed_ids = None
                       if shadow_content in objects:
-                          content_ids = [r[0] for r in con.execute(f'SELECT id FROM {qident(shadow_content)}')]
-                          assert len(content_ids) == len(set(content_ids)), f'{path}:{shadow_content}: duplicate FTS content ids'
+                          content_ids = [
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_content)}'
+                              )
+                          ]
+                          assert len(content_ids) == len(set(content_ids)), (
+                              f'{path}:{shadow_content}: duplicate FTS content ids'
+                          )
                           indexed_ids = set(content_ids)
                           contract['fts_content_rows'] = len(content_ids)
                       elif shadow_docsize in objects:
-                          docsize_ids = [r[0] for r in con.execute(f'SELECT id FROM {qident(shadow_docsize)}')]
-                          assert len(docsize_ids) == len(set(docsize_ids)), f'{path}:{shadow_docsize}: duplicate FTS doc ids'
+                          docsize_ids = [
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_docsize)}'
+                              )
+                          ]
+                          assert len(docsize_ids) == len(set(docsize_ids)), (
+                              f'{path}:{shadow_docsize}: duplicate FTS doc ids'
+                          )
                           indexed_ids = set(docsize_ids)
                           contract['fts_docsize_rows'] = len(docsize_ids)
-                      assert indexed_ids is not None, f'{path}:{fts}: cannot prove indexed membership; no auditable FTS content/docsize id set found'
+
+                      assert indexed_ids is not None, (
+                          f'{path}:{fts}: cannot prove indexed membership; '
+                          'no auditable FTS content/docsize id set found'
+                      )
                       missing = sorted(source_ids - indexed_ids)
                       extra = sorted(indexed_ids - source_ids)
                       contract['missing_source_rowids'] = missing[:20]
@@ -140,16 +204,40 @@ jobs:
                           contract['missing_source_metadata'] = bounded_metadata(con, source, missing)
                       if missing or extra:
                           print(json.dumps({'fts_membership_drift': contract}, indent=2, sort_keys=True))
-                      assert not missing and not extra, f'{path}:{fts}: unexplained FTS membership drift versus {source}; missing_source_rowids={missing[:20]}, extra_index_rowids={extra[:20]}'
+                      assert not missing and not extra, (
+                          f'{path}:{fts}: unexplained FTS membership drift versus {source}; '
+                          f'missing_source_rowids={missing[:20]}, extra_index_rowids={extra[:20]}'
+                      )
+
                       if shadow_content in objects and shadow_docsize in objects:
-                          content_ids = {r[0] for r in con.execute(f'SELECT id FROM {qident(shadow_content)}')}
-                          docsize_ids = {r[0] for r in con.execute(f'SELECT id FROM {qident(shadow_docsize)}')}
-                          assert content_ids == docsize_ids, f'{path}:{fts}: FTS shadow content/docsize membership differs'
+                          content_ids = {
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_content)}'
+                              )
+                          }
+                          docsize_ids = {
+                              r[0] for r in con.execute(
+                                  f'SELECT id FROM {qident(shadow_docsize)}'
+                              )
+                          }
+                          assert content_ids == docsize_ids, (
+                              f'{path}:{fts}: FTS shadow content/docsize membership differs'
+                          )
+
                       fts_contracts.append(contract)
+
                   assert fts_tables, f'{path}: no FTS5 virtual table found; expected search index missing'
                   unknown_contracts = sorted(set(expected_fts_sources) - set(fts_tables))
-                  assert not unknown_contracts, f'{path}: expected FTS tables missing: {unknown_contracts}'
-              report['sqlite'].append({'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'tables': row_counts, 'fts_membership_contracts': fts_contracts})
+                  assert not unknown_contracts, (
+                      f'{path}: expected FTS tables missing: {unknown_contracts}'
+                  )
+
+              report['sqlite'].append({
+                  'path': str(path),
+                  'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'tables': row_counts,
+                  'fts_membership_contracts': fts_contracts,
+              })
 
           con = duckdb.connect(database=':memory:')
           for path in parquet_files:
@@ -158,7 +246,13 @@ jobs:
               assert row_count > 0, f'{path}: zero rows'
               schema = con.execute(f"DESCRIBE SELECT * FROM read_parquet('{quoted}')").fetchall()
               assert schema, f'{path}: empty schema'
-              report['parquet'].append({'path': str(path), 'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'rows': row_count, 'columns': [r[0] for r in schema]})
+              report['parquet'].append({
+                  'path': str(path),
+                  'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  'rows': row_count,
+                  'columns': [r[0] for r in schema],
+              })
+
           print(json.dumps(report, indent=2, sort_keys=True))
           PY
 
