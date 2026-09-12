@@ -41,28 +41,20 @@ jobs:
           echo "Processing community submission from issue #${{ github.event.issue.number }}..."
           ISSUE_BODY="${{ github.event.issue.body }}"
           ISSUE_TITLE="${{ github.event.issue.title }}"
-          
+
           node -e '
             const fs = require("fs");
             const body = process.env.ISSUE_BODY || "";
             const title = process.env.ISSUE_TITLE || "";
-            
-            // Extract fields with robust multi-format matching
             const playlistMatch = body.match(/###\s*YouTube Playlist(?: or Video)? URL\s*([\s\S]*?)(?=###|$)/i);
             const branchMatch = body.match(/###\s*Target Exam (?:&|\/)\s*Branch\s*([\s\S]*?)(?=###|$)/i);
             const teacherMatch = body.match(/###\s*(?:Primary Teacher \/ Channel Name|Teacher \/ Channel Attribution)\s*([\s\S]*?)(?=###|$)/i);
             const notesMatch = body.match(/###\s*(?:Key Topics or Highlights|Highlights)\s*([\s\S]*?)(?=###|$)/i);
-            
             const playlist = playlistMatch ? playlistMatch[1].trim() : "";
             let rawBranch = branchMatch ? branchMatch[1].trim() : "GATE_EE";
-            // Normalize branch dropdown values like "GATE_EE (Electrical Engineering)" -> "GATE_EE"
             const branch = rawBranch.split(" ")[0].replace(/[^A-Za-z0-9_]/g, "") || "GATE_EE";
             const teacher = teacherMatch ? teacherMatch[1].trim() : "Community Contributor";
             const notes = notesMatch ? notesMatch[1].trim() : "Community harvested lecture notes";
-            
-            console.log(`Extracted: branch=${branch}, teacher=${teacher}, playlist=${playlist}`);
-            
-            // Harvest to sqlite with C17 deduplication
             const { execFileSync } = require("child_process");
             try {
               const res = execFileSync("node", [
@@ -76,7 +68,6 @@ jobs:
                 `--correct_opt=A`,
                 `--explanation=Step-by-step socratic verification based on official exam standard.`
               ], { encoding: "utf-8" });
-              console.log("Harvest Result:", res);
               fs.writeFileSync("harvest_result.json", res);
             } catch (err) {
               console.error("Harvest error:", err.message);
@@ -105,34 +96,49 @@ jobs:
             git push origin main || git push origin master
           fi
 
-      - name: Sync to Hugging Face Hub
-        if: env.HF_TOKEN != ''
+      - name: Record skipped Hugging Face state
+        if: env.HF_TOKEN == ''
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_REPO: ${{ secrets.HF_DATASET_REPO || 'rajon369963-del/sovereign-study-lake-india' }}
         run: |
-          echo "⚡ Syncing Parquet lake to Hugging Face Dataset: $HF_REPO..."
+          python3 scripts/hf_publication_authority.py \
+            --repo-id "$HF_REPO" \
+            --expected-path data/universal_study_lake.parquet \
+            --local-commit-sha "$(git rev-parse HEAD)" \
+            --local-data-path data_lake/parquet/universal_study_lake.parquet \
+            --provider-revision "" \
+            --output hf_sync_result.json || true
+
+      - name: Sync to Hugging Face Hub and read back exact uploaded data generation
+        if: env.HF_TOKEN != ''
+        continue-on-error: true
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ secrets.HF_DATASET_REPO || 'rajon369963-del/sovereign-study-lake-india' }}
+        run: |
           pip install -q huggingface_hub
-          python3 -c "
+          python3 - <<'PY'
           import os
+          from pathlib import Path
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ['HF_TOKEN'])
           repo_id = os.environ['HF_REPO']
           api.create_repo(repo_id=repo_id, repo_type='dataset', exist_ok=True)
-          api.upload_folder(
-              folder_path='data_lake/parquet',
-              path_in_repo='data',
-              repo_id=repo_id,
-              repo_type='dataset'
-          )
-          api.upload_file(
-              path_or_fileobj='DATASET_CARD.md',
-              path_in_repo='README.md',
-              repo_id=repo_id,
-              repo_type='dataset'
-          )
-          print('✅ Hugging Face sync complete!')
-          "
+          data_commit = api.upload_folder(folder_path='data_lake/parquet', path_in_repo='data', repo_id=repo_id, repo_type='dataset')
+          data_revision = str(getattr(data_commit, 'oid', '') or '')
+          if not data_revision:
+              raise RuntimeError('Hugging Face data upload returned no commit revision')
+          Path('hf_data_revision.txt').write_text(data_revision + '\n', encoding='utf-8')
+          api.upload_file(path_or_fileobj='DATASET_CARD.md', path_in_repo='README.md', repo_id=repo_id, repo_type='dataset')
+          PY
+          python3 scripts/hf_publication_authority.py \
+            --repo-id "$HF_REPO" \
+            --expected-path data/universal_study_lake.parquet \
+            --local-commit-sha "$(git rev-parse HEAD)" \
+            --local-data-path data_lake/parquet/universal_study_lake.parquet \
+            --provider-revision "$(cat hf_data_revision.txt)" \
+            --output hf_sync_result.json
 
       - name: Reply to Issue and Close
         if: github.event_name == 'issues'
@@ -141,38 +147,51 @@ jobs:
           script: |
             const fs = require('fs');
             let harvestInfo = {};
+            let hfInfo = {
+              decision: 'HOLD_REMOTE_READBACK_UNVERIFIED',
+              sync_attempted: false,
+              provider_revision: '',
+              remote_object_present: false,
+              remote_unit_queryable: false,
+              reason: 'No Hugging Face authority evidence file was produced'
+            };
             if (fs.existsSync('harvest_result.json')) {
               try { harvestInfo = JSON.parse(fs.readFileSync('harvest_result.json', 'utf-8')); } catch(e){}
             }
+            if (fs.existsSync('hf_sync_result.json')) {
+              try { hfInfo = JSON.parse(fs.readFileSync('hf_sync_result.json', 'utf-8')); } catch(e){}
+            }
             const unitId = harvestInfo.unit_id || 'PROCESSED';
-            const sha256 = harvestInfo.sha256 || 'verified';
+            const sha256 = harvestInfo.sha256 || 'unavailable';
             const status = harvestInfo.status || 'SUCCESS';
-            
+            const hfDecision = hfInfo.decision || 'HOLD_REMOTE_READBACK_UNVERIFIED';
+            const remoteRevision = hfInfo.provider_revision || 'UNVERIFIED';
+            const remoteObject = hfInfo.remote_object_present ? 'OBSERVED' : 'UNVERIFIED';
+            const unitQueryable = hfInfo.remote_unit_queryable ? 'VERIFIED' : 'UNVERIFIED';
+
             const comment = `### ⚡ Sovereign Study Commons Ingestion Report
-            
-            **Status**: \`${status}\`
+
+            **Local ingest status**: \`${status}\`
             **Assigned Unit ID**: \`${unitId}\`
-            **C17 Cleaned**: \`${harvestInfo.c17_cleaned ? "YES (3.5ms native)" : "N/A"}\`
             **Cryptographic SHA-256**: \`${sha256}\`
-            
-            ✅ Your submission has been processed, deduplicated, and committed to the Parquet Data Lake.
-            
-            **Query your addition in DuckDB**:
-            \`\`\`sql
-            SELECT unit_id, exam_branch, topic, teacher, timestamp_span
-            FROM 'https://huggingface.co/datasets/rajon369963-del/sovereign-study-lake-india/resolve/main/data/universal_study_lake.parquet'
-            WHERE unit_id = '${unitId}';
-            \`\`\`
-            
+            **Hugging Face publication state**: \`${hfDecision}\`
+            **Provider revision**: \`${remoteRevision}\`
+            **Expected remote object**: \`${remoteObject}\`
+            **This unit remotely queryable**: \`${unitQueryable}\`
+
+            ✅ Local processing, deduplication, and repository data-lake commit are reported separately from remote publication.
+
+            Remote queryability is **not claimed** unless provider-side evidence independently verifies the exact logical unit. A remote object/revision observation alone is intentionally weaker than unit-level queryability.
+
             *Thank you for empowering every student across India!* 🇮🇳`;
-            
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
               body: comment
             });
-            
+
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,

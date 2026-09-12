@@ -8,6 +8,9 @@ on:
       - 'data_lake/**'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
+      - 'scripts/hf_publication_authority.py'
+      - 'scripts/test_hf_publication_authority.py'
+      - 'workflows_template/auto_harvest_and_hf_sync.yml'
       - 'ci/requirements-data-integrity.txt'
       - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
@@ -246,6 +249,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/canonicalize.py --test-adversarial
+
+      - name: Verify Hugging Face exact-generation publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_hf_publication_authority.py
+          grep -q -- '--provider-revision' workflows_template/auto_harvest_and_hf_sync.yml
+          grep -q 'hf_data_revision.txt' workflows_template/auto_harvest_and_hf_sync.yml
+          grep -q 'remote_unit_queryable' workflows_template/auto_harvest_and_hf_sync.yml
+          test ! -e .github/workflows/hf-publication-authority.yml
+          if grep -q "Query your addition in DuckDB" workflows_template/auto_harvest_and_hf_sync.yml; then
+            echo 'stale remote-queryability claim still present' >&2
+            exit 1
+          fi
 
   prove-r119-repair-candidate:
     runs-on: ubuntu-latest
