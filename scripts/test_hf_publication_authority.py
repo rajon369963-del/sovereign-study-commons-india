@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 from pathlib import Path
@@ -13,33 +14,42 @@ from hf_publication_authority import (
 )
 
 
-class RepoInfo:
-    def __init__(self, sha: str):
-        self.sha = sha
+EXPECTED = "data/universal_study_lake.parquet"
 
 
-class FakeApi:
-    def __init__(self, *, revision: str = "rev-good", files=None, fail=False):
-        self.revision = revision
-        self.files = list(files or [])
+class FakeDownload:
+    def __init__(self, objects=None, fail=False):
+        self.objects = dict(objects or {})
         self.fail = fail
         self.calls = []
+        self.tmp = tempfile.TemporaryDirectory()
 
-    def repo_info(self, *, repo_id, repo_type):
-        self.calls.append(("repo_info", repo_id, repo_type))
+    def __call__(self, *, repo_id, filename, repo_type, revision, token):
+        self.calls.append((repo_id, filename, repo_type, revision))
         if self.fail:
             raise RuntimeError("provider unavailable")
-        return RepoInfo(self.revision)
+        key = (revision, filename)
+        if key not in self.objects:
+            raise FileNotFoundError(key)
+        path = Path(self.tmp.name) / f"{revision}.bin"
+        path.write_bytes(self.objects[key])
+        return str(path)
 
-    def list_repo_files(self, *, repo_id, repo_type, revision):
-        self.calls.append(("list_repo_files", repo_id, repo_type, revision))
-        if self.fail:
-            raise RuntimeError("provider unavailable")
-        return self.files
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
-def factory(api):
-    return lambda _token: api
+def verify(*, local=b"G2", revision="R2", downloader=None, token="fake-token"):
+    return verify_remote_object(
+        repo_id="owner/dataset",
+        expected_path=EXPECTED,
+        token=token,
+        local_commit_sha="LOCAL_COMMIT_G2",
+        local_data_sha256=sha(local),
+        provider_revision=revision,
+        download_factory=downloader or FakeDownload({(revision, EXPECTED): local}),
+    )
 
 
 def assert_hold_without_queryability(evidence):
@@ -48,73 +58,67 @@ def assert_hold_without_queryability(evidence):
 
 
 def test_token_missing_skip_is_typed_hold():
-    evidence = verify_remote_object(
-        repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
-        token="",
-        api_factory=factory(FakeApi(files=["data/universal_study_lake.parquet"])),
-    )
+    evidence = verify(token="", revision="")
     assert evidence.decision == HOLD_SKIPPED
     assert evidence.sync_attempted is False
     assert_hold_without_queryability(evidence)
 
 
-def test_upload_narration_without_remote_object_readback_holds():
-    api = FakeApi(revision="rev-upload-returned", files=["README.md"])
-    evidence = verify_remote_object(
-        repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
-        token="fake-token",
-        api_factory=factory(api),
-    )
-    assert evidence.decision == HOLD_READBACK
-    assert evidence.provider_revision == "rev-upload-returned"
-    assert evidence.remote_object_present is False
-    assert_hold_without_queryability(evidence)
-
-
-def test_provider_readback_requires_exact_revision_and_object():
-    api = FakeApi(
-        revision="rev-exact",
-        files=["README.md", "data/universal_study_lake.parquet"],
-    )
-    evidence = verify_remote_object(
-        repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
-        token="fake-token",
-        api_factory=factory(api),
-    )
+def test_exact_upload_revision_and_matching_bytes_pass_bounded():
+    downloader = FakeDownload({("R2", EXPECTED): b"G2"})
+    evidence = verify(local=b"G2", revision="R2", downloader=downloader)
     assert evidence.decision == PASS_BOUNDED
-    assert evidence.provider_revision == "rev-exact"
+    assert evidence.provider_revision == "R2"
+    assert evidence.local_commit_sha == "LOCAL_COMMIT_G2"
+    assert evidence.local_data_sha256 == sha(b"G2")
+    assert evidence.remote_object_sha256 == sha(b"G2")
     assert evidence.remote_object_present is True
     assert evidence.remote_unit_queryable is False
-    assert api.calls[-1] == (
-        "list_repo_files",
-        "owner/dataset",
-        "dataset",
-        "rev-exact",
-    )
+    assert downloader.calls[-1][3] == "R2"
 
 
-def test_stale_or_missing_revision_cannot_promote_remote_success():
-    api = FakeApi(revision="", files=["data/universal_study_lake.parquet"])
+def test_stale_valid_revision_same_path_different_generation_holds():
+    downloader = FakeDownload({("R1", EXPECTED): b"G1"})
+    evidence = verify(local=b"G2", revision="R1", downloader=downloader)
+    assert evidence.decision == HOLD_READBACK
+    assert evidence.remote_object_present is True
+    assert evidence.remote_object_sha256 == sha(b"G1")
+    assert evidence.remote_object_sha256 != evidence.local_data_sha256
+    assert_hold_without_queryability(evidence)
+
+
+def test_generation_binding_bypass_mutant_is_detected():
+    downloader = FakeDownload({("R1", EXPECTED): b"G1"})
+    evidence = verify(local=b"G2", revision="R1", downloader=downloader)
+    path_only_mutant = PASS_BOUNDED
+    assert path_only_mutant != evidence.decision
+    assert evidence.decision == HOLD_READBACK
+
+
+def test_missing_upload_created_revision_holds():
     evidence = verify_remote_object(
         repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
+        expected_path=EXPECTED,
         token="fake-token",
-        api_factory=factory(api),
+        local_commit_sha="LOCAL_COMMIT_G2",
+        local_data_sha256=sha(b"G2"),
+        provider_revision="",
+        download_factory=FakeDownload(),
     )
     assert evidence.decision == HOLD_READBACK
-    assert_hold_without_queryability(evidence)
+    assert "upload-created provider revision" in evidence.reason
 
 
 def test_provider_failure_is_fail_closed_and_secret_not_exposed():
     secret = "SUPER_SECRET_SHOULD_NOT_APPEAR"
     evidence = verify_remote_object(
         repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
+        expected_path=EXPECTED,
         token=secret,
-        api_factory=factory(FakeApi(fail=True)),
+        local_commit_sha="LOCAL_COMMIT_G2",
+        local_data_sha256=sha(b"G2"),
+        provider_revision="R2",
+        download_factory=FakeDownload(fail=True),
     )
     payload = evidence.to_json()
     assert evidence.decision == HOLD_READBACK
@@ -122,33 +126,28 @@ def test_provider_failure_is_fail_closed_and_secret_not_exposed():
     assert "RuntimeError" in payload
 
 
-def test_local_success_forces_remote_success_mutant_is_detectable():
-    """Known-bad mutant: local success must not overwrite a remote HOLD."""
-    evidence = verify_remote_object(
-        repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
-        token="",
-        api_factory=factory(FakeApi()),
-    )
-    local_ingest_success = True
-    bad_mutant_decision = PASS_BOUNDED if local_ingest_success else evidence.decision
-    assert bad_mutant_decision != evidence.decision, "court must distinguish local-green/remote-HOLD mutant"
-    assert evidence.decision == HOLD_SKIPPED
+def test_readme_or_branch_tip_revision_cannot_replace_data_revision():
+    downloader = FakeDownload({
+        ("R_DATA", EXPECTED): b"G2",
+        ("R_LATER_README", EXPECTED): b"STALE_OR_CHANGED",
+    })
+    evidence = verify(local=b"G2", revision="R_DATA", downloader=downloader)
+    assert evidence.decision == PASS_BOUNDED
+    assert evidence.provider_revision == "R_DATA"
+    assert downloader.calls[-1][3] == "R_DATA"
 
 
-def test_evidence_json_roundtrip_preserves_remote_ceiling():
-    evidence = verify_remote_object(
-        repo_id="owner/dataset",
-        expected_path="data/universal_study_lake.parquet",
-        token="fake-token",
-        api_factory=factory(FakeApi(revision="rev-1", files=["data/universal_study_lake.parquet"])),
-    )
+def test_evidence_json_roundtrip_preserves_generation_identities():
+    evidence = verify(local=b"G2", revision="R2")
     with tempfile.TemporaryDirectory() as td:
         path = Path(td) / "hf_sync_result.json"
         path.write_text(evidence.to_json() + "\n", encoding="utf-8")
         loaded = json.loads(path.read_text(encoding="utf-8"))
     assert loaded["decision"] == PASS_BOUNDED
-    assert loaded["remote_object_present"] is True
+    assert loaded["local_commit_sha"] == "LOCAL_COMMIT_G2"
+    assert loaded["local_data_sha256"] == sha(b"G2")
+    assert loaded["provider_revision"] == "R2"
+    assert loaded["remote_object_sha256"] == sha(b"G2")
     assert loaded["remote_unit_queryable"] is False
 
 
