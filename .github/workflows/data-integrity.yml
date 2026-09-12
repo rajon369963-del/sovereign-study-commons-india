@@ -6,8 +6,11 @@ on:
     branches: [main]
     paths:
       - 'data_lake/**'
+      - 'DATASET_CARD.md'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
+      - 'scripts/verify_dataset_license_claims.py'
+      - 'scripts/test_dataset_license_claim_parity.py'
       - 'ci/requirements-data-integrity.txt'
       - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
@@ -32,6 +35,13 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input
           --only-binary=:all: --require-hashes
           -r ci/requirements-data-integrity.txt
+
+      - name: Verify dataset-card rights claim parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_dataset_license_claims.py
+          python3 scripts/test_dataset_license_claim_parity.py
 
       - name: Verify SQLite and Parquet integrity
         shell: bash
