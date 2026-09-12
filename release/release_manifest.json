@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "sovereign-study-commons-india",
+  "generated_at": "2026-09-12T18:18:52Z",
+  "total_files": 6,
+  "total_bytes": 20663,
+  "composite_fingerprint": "196d3d03cdf1e1b468a5214c91df5e013e7e06b76aad657360cf815606884fd2",
+  "files": [
+    {
+      "path": "README.md",
+      "size_bytes": 6670,
+      "sha256": "00cc90383c4ee97070466482960109e57db81eb7812dee6515302acd73a61f6b",
+      "blake3": "c7b5e750f00f6f84c03c0107a0190cb02706774cf2354720f39cdd62a468c057"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "size_bytes": 2565,
+      "sha256": "819e08a99c7593c86173911c6efaa32496f03ed6f9aadcb08c69449646b9f9fe",
+      "blake3": "b022552394060dadf982e880d768afa97f7a64e18cd15396b210ac21d57f9503"
+    },
+    {
+      "path": "llms.txt",
+      "size_bytes": 2451,
+      "sha256": "fe143d1ca6654ff111eb2819b113afa23dc7f20880f752ccb047a81257b06763",
+      "blake3": "b24e758d4c503b33e2dc13195eb2fa89cb4e00f2f9d6ebd6db505ec79d25e184"
+    },
+    {
+      "path": "llms-full.txt",
+      "size_bytes": 2534,
+      "sha256": "ed7b8066dc1da2d143e569145ce86f62c54d9d3c787f3f3dc575e188b0c1625f",
+      "blake3": "8bf65ef30bb363d84a2a4fee764bdb259ca08be640d3ac3d2a6612e9de9862df"
+    },
+    {
+      "path": "index.html",
+      "size_bytes": 4918,
+      "sha256": "02079a8f0c1aafbdba83e7afd8807a0e4e1fcbcbc4f5b5990eee276b7e3e3d50",
+      "blake3": "992b2c6c4b5a9202979a26ce313e26b8a54dba95f79bc77592fb30ff859757c0"
+    },
+    {
+      "path": "SECURITY.md",
+      "size_bytes": 1525,
+      "sha256": "27e3a3fba31353ee3d65e878ba619996cc5ef6d7c1684fdfdb863549a9fd254e",
+      "blake3": "1ed6e1bd459f4ee384d857bd4c833df27d30bd631684e6fc944cd334310b0b99"
+    }
+  ]
+}
