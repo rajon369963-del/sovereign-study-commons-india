@@ -1,7 +1,7 @@
 name: Sovereign Study Commons Viral Showcase & Oracle Circuit
 on:
   push:
-    branches: [ main ]
+    branches: [ main, "feat/**" ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -21,39 +21,65 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio cryptography
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Validate Viral Showcase Primitives
+        shell: bash
         run: |
           test -f llms.txt || exit 1
           test -f assets/scorecard.svg || exit 1
           test -f index.html || exit 1
           echo "Showcase assets verified."
       - name: Execute Content Identity Oracle Adversarial Fixtures
+        shell: bash
         run: |
           python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
       - name: Execute Standalone Domain Benchmark Reproducer
+        shell: bash
         run: |
-          python3 scripts/benchmark_study_fsrs.py
+          python3 scripts/run_benchmark_with_tombstone.py \
+            --repo "rajon369963-del/sovereign-study-commons-india" \
+            --benchmark-cmd "python3 scripts/benchmark_study_fsrs.py" \
+            --expected-output "scripts/study_benchmark_results.json" \
+            --status-output "scripts/benchmark_status.json" \
+            --stdout-log "scripts/benchmark_stdout.log" \
+            --stderr-log "scripts/benchmark_stderr.log"
 
       - name: Upload Live Benchmark Artifact (Preserve Evidence Even on Failure)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: live-study-benchmark-results
-          path: scripts/study_benchmark_results.json
+          path: |
+            scripts/study_benchmark_results.json
+            scripts/benchmark_status.json
+            scripts/benchmark_stdout.log
+            scripts/benchmark_stderr.log
           if-no-files-found: warn
           retention-days: 90
 
       - name: Run Permanent Adversarial Canary Regression Suite
+        shell: bash
         run: |
-          pip install cryptography
           python3 tests/test_adversarial_receipt_canaries.py
+
       - name: Verify Cryptographic Receipt & Scorecard Zero-Drift
+        shell: bash
         run: |
-          pip install cryptography
+          set -o pipefail
+          set +e
           python3 scripts/verify_receipt.py --assert-live-benchmark scripts/study_benchmark_results.json 2>&1 | tee /tmp/study_forensic_verification_report.txt
+          verifier_rc=${PIPESTATUS[0]}
+          printf '\nVERIFIER_EXIT_CODE=%s\n' "$verifier_rc" | tee -a /tmp/study_forensic_verification_report.txt
+          exit "$verifier_rc"
+
+      - name: Verify Federation Evidence Manifest
+        shell: bash
+        run: |
+          python3 scripts/verify_federation_manifest.py --verify federation-evidence-manifest.json --repo sovereign-study-commons-india
 
       - name: Upload Forensic Verification Report
         if: always()
