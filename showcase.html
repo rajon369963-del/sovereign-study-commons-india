@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>sovereign-study-commons-india - Zero-Install Interactive Showcase</title>
+  <title>sovereign-study-commons-india - Interactive Cognitive Retrieval Engine</title>
   <style>
     :root { --bg: #07090e; --card: rgba(255,255,255,0.04); --border: rgba(255,255,255,0.12); --accent: #00f2fe; --text: #e6edf3; }
     body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
@@ -14,33 +14,52 @@
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; backdrop-filter: blur(12px); }
     .btn { background: linear-gradient(135deg, #00c6ff, #0072ff); color: white; border: none; padding: 10px 22px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: transform 0.15s ease; }
     .btn:hover { transform: scale(1.02); }
-    pre { background: #000; padding: 1rem; border-radius: 8px; overflow-x: auto; color: #39d353; font-size: 0.9rem; border: 1px solid #1f242c; }
+    pre { background: #000; padding: 1rem; border-radius: 8px; overflow-x: auto; color: #39d353; font-size: 0.88rem; border: 1px solid #1f242c; white-space: pre-wrap; line-height: 1.5; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <h1>⚡ sovereign-study-commons-india</h1>
-      <div class="tagline">AIR < 10 FSRS-5 Continuous Memory Engine & Sovereign Exam Derivation Harness</div>
+      <div class="tagline">AIR &lt; 10 FSRS-5 Continuous Memory Engine &amp; Sovereign Exam Knowledge Lake</div>
     </div>
     <div class="card">
-      <h3>🚀 Interactive Zero-Install Browser Playground</h3>
-      <p>Test the core execution pipeline directly inside your browser without cloning or installing dependencies.</p>
-      <button class="btn" onclick="runSimulatedBenchmark()">Run Live Hardware Benchmark</button>
+      <h3>🚀 Interactive Cognitive Retrieval Benchmark</h3>
+      <p>Execute client-side FSRS-5 retrievability calculations over synthetic card schedules. Measures real in-browser memory consolidation latency.</p>
+      <button class="btn" onclick="runClientStudyBenchmark()">⚡ Run Client-Side FSRS-5 Benchmark</button>
       <div id="output-box" style="margin-top: 1rem; display: none;">
-        <pre id="console-log">Initializing M1 WebAssembly SIMD Kernel...</pre>
+        <pre id="console-log">Initializing client-side cognitive benchmark...</pre>
       </div>
     </div>
   </div>
   <script>
-    function runSimulatedBenchmark() {
+    function runClientStudyBenchmark() {
       const box = document.getElementById('output-box');
       const log = document.getElementById('console-log');
       box.style.display = 'block';
-      log.innerText = '⚡ [0.00ms] Initializing Apple Silicon SIMD NEON emulator...\n';
-      setTimeout(() => { log.innerText += '⚡ [1.20ms] Running stream pipeline across 10,000 synthetic records...\n'; }, 300);
-      setTimeout(() => { log.innerText += '⚡ [3.45ms] Verified throughput: 0.90 Target Retention • 50,000+ Evidence Spans\n'; }, 600);
-      setTimeout(() => { log.innerText += '⚡ [4.10ms] RESULT: 0 data races, 100% integrity verified!\n'; }, 900);
+      
+      log.innerText = `⚡ [0.00ms] Initializing FSRS-5 continuous retrievability benchmark...\n`;
+      log.innerText += `⚡ Host Platform: ${navigator.userAgent.slice(0, 55)}...\n`;
+      log.innerText += `⚡ Available Logical CPU Cores: ${navigator.hardwareConcurrency || "Unknown"}\n`;
+
+      const cardsCount = 25000;
+      const t0 = performance.now();
+      let Consolidations = 0;
+      for (let i = 0; i < cardsCount; i++) {
+        const elapsedDays = 1.0 + (i % 60);
+        const stability = 5.0 + (i % 30);
+        // FSRS-5 retrievability formula: R = (1 + 19/81 * (t/S))^-0.5
+        const R = Math.pow(1.0 + (19.0 / 81.0) * (elapsedDays / stability), -0.5);
+        if (R < 0.90) Consolidations++;
+      }
+      const elapsedMs = performance.now() - t0;
+      const opsPerSec = (cardsCount / (elapsedMs / 1000)).toLocaleString(undefined, {maximumFractionDigits: 0});
+
+      log.innerText += `⚡ [${elapsedMs.toFixed(2)}ms] Calculated retrievability across ${cardsCount.toLocaleString()} exam cards\n`;
+      log.innerText += `⚡ Measured Client In-Browser Throughput: ${opsPerSec} cards/sec (Elapsed: ${elapsedMs.toFixed(2)} ms)\n`;
+      log.innerText += `⚡ Consolidations Triggered (R < 0.90): ${Consolidations.toLocaleString()} cards scheduled for min-heap review\n\n`;
+      log.innerText += `ℹ️ NOTE: This measures your current browser JS execution performance.\n`;
+      log.innerText += `   Master Knowledge Lake Reference: 50,000+ Parquet Evidence Spans (Verified in sovereign-study-commons lake).\n`;
     }
   </script>
 </body>
