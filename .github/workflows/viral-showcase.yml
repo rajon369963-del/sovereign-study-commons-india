@@ -37,6 +37,9 @@ jobs:
         shell: bash
         run: |
           python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
+      - name: Run Directional Federation Lineage Freshness Court
+        shell: bash
+        run: python3 tests/test_federation_lineage_freshness.py
       - name: Execute Standalone Domain Benchmark Reproducer
         shell: bash
         run: |
