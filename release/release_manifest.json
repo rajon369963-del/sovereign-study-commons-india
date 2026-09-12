@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "repository": "sovereign-study-commons-india",
+  "generated_at": "2026-09-12T17:43:49Z",
+  "total_files": 6,
+  "total_bytes": 4799,
+  "composite_fingerprint": "e6790b05870337c40218efb626a6764dea84d4280c6078341654e122540d03fe",
+  "files": [
+    {
+      "path": "modules/__init__.py",
+      "size_bytes": 30,
+      "sha256": "e2f89e2416ad0e8d0f500bf6c179ef67beae463d137f5f83c8c73ba175cafb79",
+      "blake3": "7c4d15124923906c4ec6e9fffeb26ed348d38324d846075d01c999e365deb9d0"
+    },
+    {
+      "path": "modules/memory/__init__.py",
+      "size_bytes": 30,
+      "sha256": "e2f89e2416ad0e8d0f500bf6c179ef67beae463d137f5f83c8c73ba175cafb79",
+      "blake3": "7c4d15124923906c4ec6e9fffeb26ed348d38324d846075d01c999e365deb9d0"
+    },
+    {
+      "path": "modules/memory/fsrs_rs_bridge.py",
+      "size_bytes": 1339,
+      "sha256": "ad06db7dedbd2433e71618e85c41bbf8c25ad3d323c7ed2036afb15b747ada6f",
+      "blake3": "acde44c8b03ac01da99e67028438819764317ffb47fc20f1451fecdae6f18c99"
+    },
+    {
+      "path": "modules/memory/sovereign_study_fts5.py",
+      "size_bytes": 2760,
+      "sha256": "65d2807cc1a9bfe5808c8b382ccff6915121293ff90e3dcdc720cb3dbdf46eea",
+      "blake3": "9a93b06c38b5e9516bd70a5ea4b145527e74be0e97c52c350f8d5a4d1a14ec76"
+    },
+    {
+      "path": "modules/study/__init__.py",
+      "size_bytes": 30,
+      "sha256": "e2f89e2416ad0e8d0f500bf6c179ef67beae463d137f5f83c8c73ba175cafb79",
+      "blake3": "7c4d15124923906c4ec6e9fffeb26ed348d38324d846075d01c999e365deb9d0"
+    },
+    {
+      "path": "modules/study/study_engine_v2.py",
+      "size_bytes": 610,
+      "sha256": "07034f69c1bfad3ddf0e454790892496de767b348e1fd8c656652b0f754f16d7",
+      "blake3": "dfc1d869f0b866b3a871bd8994a93bb02f2c2810bbb987435373c09f7e58f61c"
+    }
+  ]
+}
