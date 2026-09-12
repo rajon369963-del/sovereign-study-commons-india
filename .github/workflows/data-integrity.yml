@@ -8,6 +8,9 @@ on:
       - 'data_lake/**'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
+      - 'scripts/hf_publication_authority.py'
+      - 'scripts/test_hf_publication_authority.py'
+      - 'workflows_template/auto_harvest_and_hf_sync.yml'
       - 'ci/requirements-data-integrity.txt'
       - '.github/workflows/data-integrity.yml'
   workflow_dispatch:
@@ -54,8 +57,6 @@ jobs:
 
           report = {'sqlite': [], 'parquet': []}
 
-          # Repository-specific intended membership contracts. These are explicit on
-          # purpose: a green build must not infer away an unexplained source/index gap.
           expected_fts_sources = {
               'universal_fts': 'study_units',
           }
@@ -101,7 +102,6 @@ jobs:
                       for t in tables
                   }
 
-                  # Fail closed on duplicate identity/provenance keys where present.
                   for table in tables:
                       cols = {r[1] for r in con.execute(f'PRAGMA table_info({qident(table)})')}
                       for key in ('unit_id', 'sha256_hash'):
@@ -115,9 +115,6 @@ jobs:
                                   f'total={total}, nonnull={nonnull}, distinct={distinct}'
                               )
 
-                  # Fail closed on unexplained FTS5 membership drift. Physical SQLite
-                  # integrity is not enough: the search index must represent the intended
-                  # source-table membership, not merely be internally self-consistent.
                   fts_contracts = []
                   fts_tables = sorted(
                       name for name, meta in objects.items()
@@ -246,6 +243,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/canonicalize.py --test-adversarial
+
+      - name: Verify Hugging Face exact-generation publication authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_hf_publication_authority.py
+          grep -q -- '--provider-revision' workflows_template/auto_harvest_and_hf_sync.yml
+          grep -q 'hf_data_revision.txt' workflows_template/auto_harvest_and_hf_sync.yml
+          grep -q 'remote_unit_queryable' workflows_template/auto_harvest_and_hf_sync.yml
+          test ! -e .github/workflows/hf-publication-authority.yml
+          if grep -q "Query your addition in DuckDB" workflows_template/auto_harvest_and_hf_sync.yml; then
+            echo 'stale remote-queryability claim still present' >&2
+            exit 1
+          fi
 
   prove-r119-repair-candidate:
     runs-on: ubuntu-latest
