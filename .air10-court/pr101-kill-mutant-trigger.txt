@@ -1,0 +1,4 @@
+AIR10 independent PR101 kill-mutant court trigger
+Source PR head: 736d18c66e65558d172cd1567e5d7c3277aaa50d
+Purpose: execute commit/tree/script validator physical kill-mutant tests on an isolated feat/** branch.
+No production verifier semantics changed by this marker file.
