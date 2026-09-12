@@ -105,9 +105,12 @@ jobs:
           python3 scripts/hf_publication_authority.py \
             --repo-id "$HF_REPO" \
             --expected-path data/universal_study_lake.parquet \
+            --local-commit-sha "$(git rev-parse HEAD)" \
+            --local-data-path data_lake/parquet/universal_study_lake.parquet \
+            --provider-revision "" \
             --output hf_sync_result.json || true
 
-      - name: Sync to Hugging Face Hub and read back provider state
+      - name: Sync to Hugging Face Hub and read back exact uploaded data generation
         if: env.HF_TOKEN != ''
         continue-on-error: true
         env:
@@ -117,16 +120,24 @@ jobs:
           pip install -q huggingface_hub
           python3 - <<'PY'
           import os
+          from pathlib import Path
           from huggingface_hub import HfApi
           api = HfApi(token=os.environ['HF_TOKEN'])
           repo_id = os.environ['HF_REPO']
           api.create_repo(repo_id=repo_id, repo_type='dataset', exist_ok=True)
-          api.upload_folder(folder_path='data_lake/parquet', path_in_repo='data', repo_id=repo_id, repo_type='dataset')
+          data_commit = api.upload_folder(folder_path='data_lake/parquet', path_in_repo='data', repo_id=repo_id, repo_type='dataset')
+          data_revision = str(getattr(data_commit, 'oid', '') or '')
+          if not data_revision:
+              raise RuntimeError('Hugging Face data upload returned no commit revision')
+          Path('hf_data_revision.txt').write_text(data_revision + '\n', encoding='utf-8')
           api.upload_file(path_or_fileobj='DATASET_CARD.md', path_in_repo='README.md', repo_id=repo_id, repo_type='dataset')
           PY
           python3 scripts/hf_publication_authority.py \
             --repo-id "$HF_REPO" \
             --expected-path data/universal_study_lake.parquet \
+            --local-commit-sha "$(git rev-parse HEAD)" \
+            --local-data-path data_lake/parquet/universal_study_lake.parquet \
+            --provider-revision "$(cat hf_data_revision.txt)" \
             --output hf_sync_result.json
 
       - name: Reply to Issue and Close
