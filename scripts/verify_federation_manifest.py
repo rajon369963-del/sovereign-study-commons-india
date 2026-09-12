@@ -60,6 +60,33 @@ def get_git_output(cwd, cmd):
     except Exception:
         return "UNKNOWN"
 
+
+def classify_branch_lineage(cwd: Path, expected_head: str, actual_head: str) -> str:
+    """Classify branch/PR currentness direction relative to canonical HEAD."""
+    if actual_head == expected_head:
+        return "PASS_EXACT"
+
+    expected_is_ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", expected_head, actual_head],
+        cwd=cwd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode == 0
+    if expected_is_ancestor:
+        return "PASS_DESCENDANT"
+
+    actual_is_ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", actual_head, expected_head],
+        cwd=cwd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode == 0
+    if actual_is_ancestor:
+        return "STALE_ANCESTOR"
+
+    return "FAIL_UNRELATED"
+
+
 def compute_canonical_payload(receipt_data: dict) -> tuple[bytes, str]:
     clean_copy = json.loads(json.dumps(receipt_data))
     if "provenance" in clean_copy:
@@ -207,20 +234,17 @@ def verify_manifest(manifest_path: Path, target_repo: str = None) -> bool:
                 else:
                     print(f"  • Canonical Main Tree Match: [PASS] ({actual_tree[:10]})")
             else:
-                # PR or branch context: verify lineage
-                if actual_head == expected_head:
+                lineage = classify_branch_lineage(cwd, expected_head, actual_head)
+                if lineage == "PASS_EXACT":
                     print(f"  • Branch HEAD Match        : [PASS] (Exact match {actual_head[:10]})")
+                elif lineage == "PASS_DESCENDANT":
+                    print(f"  • Lineage Provenance Check : [PASS] (Descends from {expected_head[:10]})")
+                elif lineage == "STALE_ANCESTOR":
+                    print(f"FAIL: Stale branch HEAD {actual_head[:10]} is an ancestor of canonical {expected_head[:10]}")
+                    all_passed = False
                 else:
-                    is_ancestor = subprocess.run(["git", "merge-base", "--is-ancestor", expected_head, actual_head], cwd=cwd).returncode == 0
-                    if not is_ancestor:
-                        is_descendant = subprocess.run(["git", "merge-base", "--is-ancestor", actual_head, expected_head], cwd=cwd).returncode == 0
-                        if not is_descendant:
-                            print(f"FAIL: Lineage broken between {actual_head[:10]} and canonical {expected_head[:10]}")
-                            all_passed = False
-                        else:
-                            print(f"  • Lineage Ancestry Verified: [PASS] (Head {actual_head[:10]} is ancestor of {expected_head[:10]})")
-                    else:
-                        print(f"  • Lineage Provenance Check : [PASS] (Descends from {expected_head[:10]})")
+                    print(f"FAIL: Lineage broken between {actual_head[:10]} and canonical {expected_head[:10]}")
+                    all_passed = False
 
             # 2. Check Ed25519 signature of canonical payload
             receipt_path = cwd / rdata["receipt"]["path"]
