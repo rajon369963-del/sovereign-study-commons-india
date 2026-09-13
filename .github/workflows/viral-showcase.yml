@@ -37,9 +37,11 @@ jobs:
         shell: bash
         run: |
           python scripts/content_identity_oracle.py --check-expected fixtures/content_identity_v1_adversarial.json
-      - name: Run Directional Federation Lineage Freshness Court
+      - name: Run Directional Federation Lineage Freshness & Hostile Courts
         shell: bash
-        run: python3 tests/test_federation_lineage_freshness.py
+        run: |
+          python3 tests/test_federation_lineage_freshness.py
+          python3 tests/test_federation_manifest_hostile_court.py
       - name: Execute Standalone Domain Benchmark Reproducer
         shell: bash
         run: |
@@ -89,7 +91,7 @@ jobs:
       - name: Verify Federation Evidence Manifest
         shell: bash
         run: |
-          python3 scripts/verify_federation_manifest.py --verify federation-evidence-manifest.json --repo sovereign-study-commons-india
+          python3 scripts/verify_federation_manifest.py --verify federation-evidence-manifest.json --repo sovereign-study-commons-india --authority-context auto --live-provider
 
       - name: Upload Forensic Verification Report
         if: always()
