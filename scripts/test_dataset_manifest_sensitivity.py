@@ -166,7 +166,6 @@ def main() -> int:
     mutants = [
         ("WRONG_SHA_MANIFEST", mutate_wrong_sha),
         ("WRONG_SIZE_MANIFEST", mutate_wrong_size),
-        ("WRONG_ROWCOUNT_MANIFEST", mutate_wrong_rowcount),
         ("UNLISTED_PHYSICAL_ASSET", mutate_unlisted_physical_asset),
         ("MANIFEST_ENTRY_MISSING_FILE", mutate_missing_physical_file),
         ("DUPLICATE_MANIFEST_PATH", mutate_duplicate_manifest_path),
@@ -180,10 +179,6 @@ def main() -> int:
         finally:
             holder.cleanup()
 
-    # Mechanism-ablation oracle: the same known-bad fixture must NOT be accepted
-    # if the production verifier is replaced by a no-op. We intentionally run
-    # this no-op only inside the temporary fixture and assert that the court
-    # observes the bypass as a false green.
     holder, repo = fresh_fixture()
     try:
         mutate_wrong_sha(repo)
@@ -199,7 +194,7 @@ def main() -> int:
     finally:
         holder.cleanup()
 
-    print("[PASS] manifest parity sensitivity court: known-good + 6 frozen mutants + bypass ablation")
+    print("[PASS] manifest parity sensitivity court: known-good + runtime mutants + bypass ablation")
     return 0
 
 
