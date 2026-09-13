@@ -16,19 +16,51 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Verify unauthenticated Pages endpoint
+      - name: Verify unauthenticated Pages cockpit identity
         shell: bash
         run: |
           set -euo pipefail
-          url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
-          body="$(mktemp)"
-          code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
-          printf 'event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s\n' "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
-          grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
-          test "$code" = '200'
-          grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
-          if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
+
+          public_url='https://rajon369963-del.github.io/sovereign-study-commons-india/cockpit/'
+          source_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/cockpit/index.html"
+          expected_title='<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>'
+          public_body="$(mktemp)"
+          source_body="$(mktemp)"
+
+          public_code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$public_body" --write-out '%{http_code}' "$public_url")"
+          source_code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$source_body" --write-out '%{http_code}' "$source_url")"
+
+          public_sha="$(sha256sum "$public_body" | cut -d' ' -f1)"
+          source_sha="$(sha256sum "$source_body" | cut -d' ' -f1)"
+          printf 'event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s source_sha256=%s\n' \
+            "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$public_url" "$public_code" \
+            "$(wc -c < "$public_body")" "$public_sha" "$source_sha"
+          grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$public_body" | head -n 5 || true
+
+          verify_identity() {
+            local http="$1" expected_digest="$2" observed_digest="$3"
+            test "$http" = '200' && test "$expected_digest" = "$observed_digest"
+          }
+
+          test "$source_code" = '200'
+          grep -Fq "$expected_title" "$source_body"
+          grep -Fq "$expected_title" "$public_body"
+          verify_identity "$public_code" "$source_sha" "$public_sha"
+
+          # Mechanism-sensitive negative oracle: HTTP 200 with stale/wrong bytes must fail.
+          stale_body="$(mktemp)"
+          cp "$source_body" "$stale_body"
+          printf '\n<!-- stale-pages-mutant -->\n' >> "$stale_body"
+          stale_sha="$(sha256sum "$stale_body" | cut -d' ' -f1)"
+          if verify_identity '200' "$source_sha" "$stale_sha"; then
+            echo 'HTTP-200 stale-content mutant escaped identity court' >&2
+            exit 1
+          fi
+
+          if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$public_body" || grep -Fq 'SUCCESS_PHYSICAL' "$public_body"; then
             echo 'stale unsafe verification marker detected on public endpoint' >&2
             exit 1
           fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED repo_sha=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$url" "$code" 'Universal Sovereign Study Lake title'
+
+          printf 'PUBLIC_ENDPOINT_IDENTITY_VERIFIED repo_sha=%s source=%s endpoint=%s http=%s sha256=%s\n' \
+            "$GITHUB_SHA" 'cockpit/index.html' "$public_url" "$public_code" "$public_sha"
