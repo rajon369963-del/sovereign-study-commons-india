@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Fail closed when the runtime manifest-sensitivity mutant inventory drifts.
+"""Fail closed when manifest-sensitivity authority or trigger coverage drifts.
 
 The reviewed contract is intentionally separate from the executable court so a
 silent implementation-only removal/rename cannot reduce required semantic
-coverage while CI stays green.
+coverage while CI stays green. The same checker also binds the frozen authority
+files to the production Data integrity push trigger so a main-branch authority
+change cannot silently skip the court.
 """
 from __future__ import annotations
 
@@ -15,6 +17,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 COURT = ROOT / "scripts" / "test_dataset_manifest_sensitivity.py"
 CONTRACT = ROOT / "ci" / "dataset-manifest-sensitivity-contract.json"
+WORKFLOW = ROOT / ".github" / "workflows" / "data-integrity.yml"
+REQUIRED_PUSH_PATHS = {
+    "scripts/test_dataset_manifest_sensitivity.py",
+    "scripts/check_dataset_manifest_sensitivity_contract.py",
+    "ci/dataset-manifest-sensitivity-contract.json",
+    ".github/workflows/data-integrity.yml",
+}
 
 
 def runtime_mutant_ids() -> list[str]:
@@ -43,6 +52,36 @@ def canonical_digest(ids: list[str]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def workflow_push_paths() -> set[str]:
+    """Parse the bounded `on.push.paths` list without adding a YAML dependency."""
+    lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
+    in_push = False
+    in_paths = False
+    paths: set[str] = set()
+    for line in lines:
+        if line == "  push:":
+            in_push = True
+            in_paths = False
+            continue
+        if in_push and line.startswith("  ") and not line.startswith("    ") and line.strip():
+            break
+        if not in_push:
+            continue
+        if line == "    paths:":
+            in_paths = True
+            continue
+        if in_paths:
+            if not line.startswith("      - "):
+                if line.strip():
+                    break
+                continue
+            value = line.split("-", 1)[1].strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+                value = value[1:-1]
+            paths.add(value)
+    return paths
+
+
 def main() -> int:
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     expected = contract["expected_mutant_ids"]
@@ -59,9 +98,18 @@ def main() -> int:
             f"expected_sha256={expected_digest} observed_sha256={observed_digest}"
         )
 
+    push_paths = workflow_push_paths()
+    missing_push_paths = sorted(REQUIRED_PUSH_PATHS - push_paths)
+    if missing_push_paths:
+        raise SystemExit(
+            "manifest sensitivity contract HOLD: Data integrity push trigger omits authority surface(s): "
+            f"{missing_push_paths}"
+        )
+
     print(
         "[PASS] manifest sensitivity frozen authority: "
-        f"version={contract['contract_version']} inventory_sha256={observed_digest} mutants={len(observed)}"
+        f"version={contract['contract_version']} inventory_sha256={observed_digest} mutants={len(observed)} "
+        f"trigger_paths={len(REQUIRED_PUSH_PATHS)}"
     )
     return 0
 
