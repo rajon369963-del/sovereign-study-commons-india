@@ -1,0 +1,32 @@
+name: Harvest rollback court
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/harvest_community.js'
+      - 'scripts/test_harvest_rollback_readback.py'
+      - '.github/workflows/harvest-rollback-court.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harvest-rollback-court-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  rollback-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact triggering revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record tested revision
+        run: git rev-parse HEAD
+
+      - name: Run exact harvest rollback authority court
+        run: python scripts/test_harvest_rollback_readback.py
