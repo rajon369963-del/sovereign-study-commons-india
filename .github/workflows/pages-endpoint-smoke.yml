@@ -3,6 +3,7 @@ name: Pages endpoint smoke
 on:
   pull_request:
     paths:
+      - 'index.html'
       - '.github/workflows/pages-endpoint-smoke.yml'
   push:
     branches: [main]
@@ -28,11 +29,12 @@ jobs:
       - name: Checkout exact revision
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - name: Verify unauthenticated Pages endpoint matches repository identity
+      - name: Verify unauthenticated Pages endpoint matches exact repository payload
         shell: bash
         run: |
           set -euo pipefail
           url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
+          expected_sha256="$(sha256sum index.html | cut -d' ' -f1)"
           expected_title="$(python3 - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
@@ -63,6 +65,12 @@ jobs:
 
           assert_identity() {
             local body="$1"
+            local observed_sha256
+            observed_sha256="$(sha256sum "$body" | cut -d' ' -f1)"
+            if test "$observed_sha256" != "$expected_sha256"; then
+              return 1
+            fi
+
             local title_file
             title_file="$(mktemp)"
             python3 - "$body" "$title_file" <<'PY'
@@ -102,15 +110,17 @@ jobs:
             return 0
           }
 
-          # Frozen negative control: the exact comparator must reject wrong bytes.
+          # Mechanism-sensitive negative control: preserve the legitimate title while
+          # changing payload bytes. A title-only comparator would falsely accept it.
           bad_body="$(mktemp)"
-          printf '<!doctype html><title>KNOWN_BAD_WRONG_TITLE</title>\n' > "$bad_body"
+          cp index.html "$bad_body"
+          printf '\n<!-- KNOWN_BAD_SAME_TITLE_DIFFERENT_BODY -->\n' >> "$bad_body"
           if assert_identity "$bad_body"; then
-            echo 'FALSE_GREEN: endpoint identity comparator accepted wrong title' >&2
+            echo 'FALSE_GREEN: endpoint identity comparator accepted same-title wrong payload' >&2
             exit 1
           fi
           rm -f "$bad_body"
-          echo 'NEGATIVE_FIXTURE_RED=wrong-title'
+          echo 'NEGATIVE_FIXTURE_RED=same-title-wrong-body'
 
           # Pages publication can lag the main push. Retry the exact public path
           # for a bounded window, then fail closed instead of accepting stale bytes.
@@ -119,9 +129,9 @@ jobs:
           code='000'
           for attempt in $(seq 1 12); do
             code="$(curl --silent --show-error --location --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
-            printf 'attempt=%s event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s expected_title=%q\n' \
+            printf 'attempt=%s event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s expected_sha256=%s expected_title=%q\n' \
               "$attempt" "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" \
-              "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)" "$expected_title"
+              "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)" "$expected_sha256" "$expected_title"
             if test "$code" = '200' && assert_identity "$body"; then
               matched='true'
               break
@@ -131,5 +141,5 @@ jobs:
 
           test "$code" = '200'
           test "$matched" = 'true'
-          printf 'PUBLIC_ENDPOINT_IDENTITY_VERIFIED repo_sha=%s url=%s http=%s expected_title=%q\n' \
-            "$GITHUB_SHA" "$url" "$code" "$expected_title"
+          printf 'PUBLIC_ENDPOINT_PAYLOAD_VERIFIED repo_sha=%s url=%s http=%s expected_sha256=%s expected_title=%q\n' \
+            "$GITHUB_SHA" "$url" "$code" "$expected_sha256" "$expected_title"
