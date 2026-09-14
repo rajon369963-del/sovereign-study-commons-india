@@ -92,11 +92,14 @@ jobs:
             local observed_title
             observed_title="$(cat "$title_file")"
             rm -f "$title_file"
-            test "$observed_title" = "$expected_title"
+            if test "$observed_title" != "$expected_title"; then
+              return 1
+            fi
             if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
               echo 'stale unsafe verification marker detected on public endpoint' >&2
               return 1
             fi
+            return 0
           }
 
           # Frozen negative control: the exact comparator must reject wrong bytes.
