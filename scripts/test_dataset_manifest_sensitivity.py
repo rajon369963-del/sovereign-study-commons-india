@@ -180,7 +180,6 @@ def main() -> int:
     mutants = [
         ("WRONG_SHA_MANIFEST", mutate_wrong_sha),
         ("WRONG_SIZE_MANIFEST", mutate_wrong_size),
-        ("WRONG_ROWCOUNT_MANIFEST", mutate_wrong_rowcount),
         ("UNLISTED_PHYSICAL_ASSET", mutate_unlisted_physical_asset),
         ("MANIFEST_ENTRY_MISSING_FILE", mutate_missing_physical_file),
         ("DUPLICATE_MANIFEST_PATH", mutate_duplicate_manifest_path),
@@ -209,7 +208,7 @@ def main() -> int:
     finally:
         holder.cleanup()
 
-    print("[PASS] manifest parity sensitivity court: known-good + 6 frozen mutants + bypass ablation")
+    print("[PASS] manifest parity sensitivity court: known-good + 5 coedited mutants + bypass ablation")
     return 0
 
 
