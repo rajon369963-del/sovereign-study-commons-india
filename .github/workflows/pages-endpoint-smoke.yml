@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - '.github/workflows/pages-endpoint-smoke.yml'
+      - 'scripts/verify_pages_endpoint.sh'
+      - 'tests/test_pages_endpoint_gate.py'
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
@@ -16,19 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Verify endpoint oracle fixtures
+        shell: bash
+        run: python3 tests/test_pages_endpoint_gate.py
       - name: Verify unauthenticated Pages endpoint
         shell: bash
-        run: |
-          set -euo pipefail
-          url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
-          body="$(mktemp)"
-          code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
-          printf 'event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s\n' "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
-          grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
-          test "$code" = '200'
-          grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
-          if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
-            echo 'stale unsafe verification marker detected on public endpoint' >&2
-            exit 1
-          fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED repo_sha=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$url" "$code" 'Universal Sovereign Study Lake title'
+        run: bash scripts/verify_pages_endpoint.sh
