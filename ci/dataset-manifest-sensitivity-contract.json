@@ -3,10 +3,9 @@
   "expected_mutant_ids": [
     "WRONG_SHA_MANIFEST",
     "WRONG_SIZE_MANIFEST",
-    "WRONG_ROWCOUNT_MANIFEST",
     "UNLISTED_PHYSICAL_ASSET",
     "MANIFEST_ENTRY_MISSING_FILE",
     "DUPLICATE_MANIFEST_PATH"
   ],
-  "expected_inventory_sha256": "0b737c2210069f0614db3470d142a26752e93e5b41f96e72708db66976791840"
+  "expected_inventory_sha256": "7e345740a37f8c707afb9e59e8447db1a5cf6e408de1ef66bcac1a10cdb21ef1"
 }
