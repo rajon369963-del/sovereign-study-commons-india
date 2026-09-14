@@ -22,6 +22,7 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 PRODUCTION_VERIFIER = ROOT / "scripts" / "verify_dataset_manifest.py"
+CONTRACT_CHECKER = ROOT / "scripts" / "check_dataset_manifest_sensitivity_contract.py"
 
 
 def sha256(path: Path) -> str:
@@ -157,6 +158,19 @@ def mutate_duplicate_manifest_path(repo: Path) -> None:
 
 
 def main() -> int:
+    authority = subprocess.run(
+        [sys.executable, str(CONTRACT_CHECKER)],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+        timeout=10,
+    )
+    if authority.returncode != 0:
+        raise AssertionError(f"FROZEN_MUTANT_AUTHORITY_HOLD rc={authority.returncode}\n{authority.stdout[-2000:]}")
+    print(authority.stdout.strip())
+
     holder, repo = fresh_fixture()
     try:
         require_pass("KNOWN_GOOD_SYNTHETIC_SET", repo)
@@ -180,10 +194,6 @@ def main() -> int:
         finally:
             holder.cleanup()
 
-    # Mechanism-ablation oracle: the same known-bad fixture must NOT be accepted
-    # if the production verifier is replaced by a no-op. We intentionally run
-    # this no-op only inside the temporary fixture and assert that the court
-    # observes the bypass as a false green.
     holder, repo = fresh_fixture()
     try:
         mutate_wrong_sha(repo)

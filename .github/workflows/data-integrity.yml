@@ -8,6 +8,8 @@ on:
       - 'data_lake/**'
       - 'scripts/verify_dataset_manifest.py'
       - 'scripts/test_dataset_manifest_sensitivity.py'
+      - 'scripts/check_dataset_manifest_sensitivity_contract.py'
+      - 'ci/dataset-manifest-sensitivity-contract.json'
       - 'scripts/repair_fts_sync.py'
       - 'scripts/canonicalize.py'
       - 'ci/requirements-data-integrity.txt'
