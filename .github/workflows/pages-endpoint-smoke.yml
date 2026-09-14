@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - '.github/workflows/pages-endpoint-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '.github/workflows/pages-endpoint-smoke.yml'
   schedule:
     - cron: '17 */6 * * *'
   workflow_dispatch:
@@ -11,24 +16,117 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: pages-endpoint-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   public-endpoint:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Verify unauthenticated Pages endpoint
+      - name: Checkout exact revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Verify unauthenticated Pages endpoint matches repository identity
         shell: bash
         run: |
           set -euo pipefail
           url='https://rajon369963-del.github.io/sovereign-study-commons-india/'
-          body="$(mktemp)"
-          code="$(curl --silent --show-error --location --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
-          printf 'event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s\n' "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)"
-          grep -Eio '<title>[^<]*</title>|<h1[^>]*>[^<]*</h1>' "$body" | head -n 5 || true
-          test "$code" = '200'
-          grep -Fq '<title>सार्वजनिक अध्ययन महा-कॉकपिट | Universal Sovereign Study Lake</title>' "$body"
-          if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
-            echo 'stale unsafe verification marker detected on public endpoint' >&2
+          expected_title="$(python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class TitleParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.in_title = False
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() == 'title':
+                      self.in_title = True
+              def handle_endtag(self, tag):
+                  if tag.lower() == 'title':
+                      self.in_title = False
+              def handle_data(self, data):
+                  if self.in_title:
+                      self.parts.append(data)
+
+          parser = TitleParser()
+          parser.feed(Path('index.html').read_text(encoding='utf-8'))
+          title = ''.join(parser.parts).strip()
+          if not title:
+              raise SystemExit('repository index.html has no title')
+          print(title)
+          PY
+          )"
+
+          assert_identity() {
+            local body="$1"
+            local title_file
+            title_file="$(mktemp)"
+            python3 - "$body" "$title_file" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class TitleParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.in_title = False
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() == 'title':
+                      self.in_title = True
+              def handle_endtag(self, tag):
+                  if tag.lower() == 'title':
+                      self.in_title = False
+              def handle_data(self, data):
+                  if self.in_title:
+                      self.parts.append(data)
+
+          parser = TitleParser()
+          parser.feed(Path(sys.argv[1]).read_text(encoding='utf-8', errors='replace'))
+          Path(sys.argv[2]).write_text(''.join(parser.parts).strip(), encoding='utf-8')
+          PY
+            local observed_title
+            observed_title="$(cat "$title_file")"
+            rm -f "$title_file"
+            test "$observed_title" = "$expected_title"
+            if grep -Fq 'PASSED_PHYSICAL_VERIFICATION' "$body" || grep -Fq 'SUCCESS_PHYSICAL' "$body"; then
+              echo 'stale unsafe verification marker detected on public endpoint' >&2
+              return 1
+            fi
+          }
+
+          # Frozen negative control: the exact comparator must reject wrong bytes.
+          bad_body="$(mktemp)"
+          printf '<!doctype html><title>KNOWN_BAD_WRONG_TITLE</title>\n' > "$bad_body"
+          if assert_identity "$bad_body"; then
+            echo 'FALSE_GREEN: endpoint identity comparator accepted wrong title' >&2
             exit 1
           fi
-          printf 'PUBLIC_ENDPOINT_VERIFIED repo_sha=%s url=%s http=%s marker=%s\n' "$GITHUB_SHA" "$url" "$code" 'Universal Sovereign Study Lake title'
+          rm -f "$bad_body"
+          echo 'NEGATIVE_FIXTURE_RED=wrong-title'
+
+          # Pages publication can lag the main push. Retry the exact public path
+          # for a bounded window, then fail closed instead of accepting stale bytes.
+          body="$(mktemp)"
+          matched='false'
+          code='000'
+          for attempt in $(seq 1 12); do
+            code="$(curl --silent --show-error --location --retry 2 --retry-delay 2 --connect-timeout 10 --max-time 30 --output "$body" --write-out '%{http_code}' "$url")"
+            printf 'attempt=%s event=%s ref=%s repo_sha=%s endpoint=%s http=%s bytes=%s sha256=%s expected_title=%q\n' \
+              "$attempt" "$GITHUB_EVENT_NAME" "$GITHUB_REF" "$GITHUB_SHA" "$url" "$code" \
+              "$(wc -c < "$body")" "$(sha256sum "$body" | cut -d' ' -f1)" "$expected_title"
+            if test "$code" = '200' && assert_identity "$body"; then
+              matched='true'
+              break
+            fi
+            sleep 10
+          done
+
+          test "$code" = '200'
+          test "$matched" = 'true'
+          printf 'PUBLIC_ENDPOINT_IDENTITY_VERIFIED repo_sha=%s url=%s http=%s expected_title=%q\n' \
+            "$GITHUB_SHA" "$url" "$code" "$expected_title"
