@@ -42,6 +42,7 @@ jobs:
         run: |
           python3 tests/test_federation_lineage_freshness.py
           python3 tests/test_federation_manifest_hostile_court.py
+          python3 tests/test_federation_workflow_contract.py
       - name: Execute Standalone Domain Benchmark Reproducer
         shell: bash
         run: |
